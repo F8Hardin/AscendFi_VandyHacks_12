@@ -46,6 +46,57 @@ AscendFi is a full-stack web application built for VandyHacks 12. It combines a 
 
 ---
 
+## Agent Service — Container Interface
+
+The `agent-service` runs each user session in its own Docker container managed by the orchestrator. To swap in a custom agent, replace `agent/app/main.py` with any HTTP server that implements this contract:
+
+### Required Endpoints
+
+#### `POST /chat/stream`
+
+**Request body:**
+```json
+{
+  "messages": [
+    { "role": "user" | "assistant", "content": "string" }
+  ],
+  "context": {
+    "monthly_income": 5000.0,
+    "checking_balance": 1200.0,
+    "savings_balance": 300.0,
+    "bills": [
+      { "name": "Rent", "amount": 1200.0, "due_date": "2026-04-01", "category": "Housing" }
+    ],
+    "debts": [
+      { "name": "Visa", "balance": 4500.0, "interest_rate": 0.22, "minimum_payment": 90.0, "type": "credit_card" }
+    ],
+    "spending_history": [
+      { "date": "2026-03-15", "amount": 45.0, "category": "Food", "description": "Grocery run" }
+    ],
+    "credit_score": 620,
+    "life_events": ["job_loss"],
+    "extra": {}
+  }
+}
+```
+
+**Response:** Server-Sent Events (SSE) stream. Each line is `data: <json>\n\n`:
+
+| Event | Shape | Description |
+|-------|-------|-------------|
+| Token chunk | `{"type": "token", "text": "..."}` | Append to chat output |
+| Tool activity | `{"type": "tool_start", "name": "..."}` | Shown in "thinking" steps |
+| Stream end | `{"type": "done"}` | Stop reading |
+| Error | `{"type": "error", "message": "..."}` | Surface to user |
+
+#### `GET /health`
+```json
+{ "status": "ok" }
+```
+The orchestrator polls this before routing any traffic to the container. Return `200` once ready.
+
+---
+
 ## Pluggable Agent Architecture
 
 All AI logic sits behind a shared `FinancialAgentBase` interface. Swapping AI providers requires no changes to routes or business logic.

@@ -31,11 +31,10 @@
 
 <script setup lang="ts">
 const { isUsingDummyData } = useFinancialData()
-const { logout } = useAuth()
+const { signOut } = useAuth()
 
 async function onLogout() {
-  logout()
-  await navigateTo('/login')
+  await signOut()
 }
 </script>
 

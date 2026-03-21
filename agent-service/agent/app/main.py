@@ -15,7 +15,7 @@ load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await init_agent()  # starts FastMCP subprocess, loads tools, builds executor
+    await init_agent()
     yield
 
 
@@ -35,11 +35,8 @@ async def chat_stream(request: ChatRequest):
 
     # Build input dict — include the financial context snapshot in the prompt
     user_input = request.messages[-1].content if request.messages else ""
-    context_str = request.context.model_dump_json() if request.context else "{}"
     context_note = (
-        f"\n\nUser's financial context (use as input to tools):\n"
-        f"{_context_summary(request.context)}\n\n"
-        f"Full context JSON (pass to tools): {context_str}"
+        f"\n\nUser's financial context:\n{_context_summary(request.context)}"
         if request.context
         else ""
     )
