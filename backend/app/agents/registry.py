@@ -8,11 +8,11 @@ To add a new agent: import its class and add it to AGENT_REGISTRY.
 import os
 from app.agents.base import FinancialAgentBase
 from app.agents.claude_agent import ClaudeAgent
+from app.agents.lm_studio_agent import LMStudioAgent
 
 AGENT_REGISTRY: dict[str, type[FinancialAgentBase]] = {
     "claude": ClaudeAgent,
-    # "openai": OpenAIAgent,   ← plug in here
-    # "local_llm": LocalAgent, ← or here
+    "lm_studio": LMStudioAgent,
 }
 
 _active_agent: FinancialAgentBase | None = None
