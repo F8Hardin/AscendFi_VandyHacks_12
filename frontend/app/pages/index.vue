@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="dashboard__header">
       <div>
-        <h1 class="dashboard__title">Good morning, {{ data?.user.name.split(' ')[0] }} 👋</h1>
+        <h1 class="dashboard__title">Good morning, {{ displayName }}</h1>
         <p class="dashboard__date">{{ today }} · Financial Recovery Dashboard</p>
       </div>
     </div>
@@ -183,11 +183,20 @@
         </div>
       </section>
     </template>
+
+    <ChatWidget />
   </div>
 </template>
 
 <script setup lang="ts">
 const { data } = useFinancialData()
+const { user } = useAuth()
+
+const displayName = computed(() => {
+  const meta = user.value?.user_metadata
+  const full = meta?.full_name ?? meta?.name ?? user.value?.email ?? ''
+  return full.split(/[\s@]/)[0]
+})
 
 const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 

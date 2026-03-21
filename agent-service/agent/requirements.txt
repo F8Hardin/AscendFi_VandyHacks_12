@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+langchain
+langchain-anthropic
+langchain-mcp-adapters
+langchain-core
+fastmcp
+httpx
+python-dotenv
+pydantic

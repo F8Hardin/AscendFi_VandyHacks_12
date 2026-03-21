@@ -18,6 +18,7 @@
 
       <div class="sidebar__footer">
         <div v-if="isUsingDummyData" class="demo-badge">DEMO DATA</div>
+        <button class="signout-btn" @click="signOut">Sign out</button>
       </div>
     </aside>
 
@@ -25,11 +26,15 @@
     <main class="main-content">
       <slot />
     </main>
+
+    <!-- Floating chat widget -->
+    <ChatWidget />
   </div>
 </template>
 
 <script setup lang="ts">
 const { isUsingDummyData } = useFinancialData()
+const { signOut } = useAuth()
 </script>
 
 <style scoped>
@@ -93,7 +98,19 @@ const { isUsingDummyData } = useFinancialData()
   color: var(--color-primary);
 }
 .nav-item__icon { font-size: 0.9rem; }
-.sidebar__footer { padding-top: 1rem; }
+.sidebar__footer { padding-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.signout-btn {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, color 0.15s;
+}
+.signout-btn:hover { border-color: var(--color-danger); color: var(--color-danger); }
 .demo-badge {
   background: rgba(245,158,11,0.15);
   color: #f59e0b;
