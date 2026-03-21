@@ -1,0 +1,44 @@
+/* ─────────────────────────────────────────────
+   AscendFi Design Tokens
+   Swap these to apply a Figma design system.
+───────────────────────────────────────────── */
+:root {
+  /* Brand */
+  --color-primary:       #22c55e;  /* green-500 */
+  --color-primary-dim:   #15803d;  /* green-700 */
+  --color-primary-glow:  rgba(34, 197, 94, 0.15);
+
+  /* Surfaces */
+  --color-bg:            #030712;  /* gray-950 */
+  --color-surface:       #111827;  /* gray-900 */
+  --color-surface-raised:#1f2937;  /* gray-800 */
+  --color-border:        #374151;  /* gray-700 */
+
+  /* Text */
+  --color-text:          #f9fafb;  /* gray-50  */
+  --color-text-muted:    #9ca3af;  /* gray-400 */
+  --color-text-faint:    #4b5563;  /* gray-600 */
+
+  /* Semantic */
+  --color-danger:        #ef4444;  /* red-500  */
+  --color-danger-dim:    rgba(239, 68, 68, 0.15);
+  --color-warning:       #f59e0b;  /* amber-500*/
+  --color-warning-dim:   rgba(245, 158, 11, 0.15);
+  --color-info:          #3b82f6;  /* blue-500 */
+  --color-info-dim:      rgba(59, 130, 246, 0.15);
+  --color-success:       #22c55e;
+  --color-success-dim:   rgba(34, 197, 94, 0.15);
+
+  /* Chart palette */
+  --chart-1: #3b82f6;
+  --chart-2: #22c55e;
+  --chart-3: #f59e0b;
+  --chart-4: #8b5cf6;
+  --chart-5: #ec4899;
+  --chart-6: #06b6d4;
+  --chart-7: #6b7280;
+
+  /* Spacing / Radius */
+  --radius-card: 1rem;
+  --radius-badge: 9999px;
+}

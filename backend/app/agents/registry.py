@@ -11,7 +11,7 @@ from app.agents.claude_agent import ClaudeAgent
 from app.agents.lm_studio_agent import LMStudioAgent
 
 AGENT_REGISTRY: dict[str, type[FinancialAgentBase]] = {
-    "claude": ClaudeAgent,
+    #"claude": ClaudeAgent,
     "lm_studio": LMStudioAgent,
 }
 
@@ -21,7 +21,7 @@ _active_agent: FinancialAgentBase | None = None
 def get_agent() -> FinancialAgentBase:
     global _active_agent
     if _active_agent is None:
-        name = os.getenv("ACTIVE_AGENT", "claude")
+        name = os.getenv("ACTIVE_AGENT", "lm_studio")
         cls = AGENT_REGISTRY.get(name)
         if cls is None:
             raise ValueError(

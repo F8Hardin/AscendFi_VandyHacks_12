@@ -195,8 +195,14 @@ Respond with JSON matching this schema:
         if context:
             system += f"\n\nUser's current financial context:\n{_context_summary(context)}"
 
+        # Some local model Jinja templates require the first non-system
+        # message to be from the user — strip any leading assistant messages.
+        user_messages = list(messages)
+        while user_messages and user_messages[0].role != "user":
+            user_messages = user_messages[1:]
+
         api_messages = [{"role": "system", "content": system}] + [
-            {"role": m.role, "content": m.content} for m in messages
+            {"role": m.role, "content": m.content} for m in user_messages
         ]
 
         stream = _client().chat.completions.create(
