@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="dashboard__header">
       <div>
-        <h1 class="dashboard__title">Good morning, {{ data?.user.name.split(' ')[0] }} 👋</h1>
+        <h1 class="dashboard__title">Good morning<template v-if="displayName">, {{ displayName }}</template> 👋</h1>
         <p class="dashboard__date">
           <span v-if="today">{{ today }} · </span>Financial Recovery Dashboard
         </p>
@@ -195,6 +195,17 @@ definePageMeta({
 })
 
 const { data } = useFinancialData()
+const { user } = useAuth()
+
+/** Derive a display name from the Supabase user object. */
+const displayName = computed(() => {
+  const meta = user.value?.user_metadata
+  const fullName: string | undefined = meta?.full_name ?? meta?.name
+  if (fullName) return fullName.split(' ')[0]
+  const email = user.value?.email
+  if (email) return email.split('@')[0]
+  return ''
+})
 
 /** Empty until mounted so SSR and client markup match (avoids timezone / midnight hydration mismatches). */
 const today = ref('')
