@@ -3,14 +3,15 @@
     <!-- Header -->
     <div class="dashboard__header">
       <div>
-        <h1 class="dashboard__title">Good morning, {{ data?.user.name.split(' ')[0] }} 👋</h1>
+        <h1 class="dashboard__title">Good morning, {{ displayName }}</h1>
         <p class="dashboard__date">{{ today }} · Financial Recovery Dashboard</p>
       </div>
     </div>
 
     <template v-if="data">
       <!-- ── KPI Row ──────────────────────────────────────────────── -->
-      <section class="grid-4 mb-section">
+      <section ref="kpiScroll" class="mb-section overflow-x drag-scroll">
+      <div class="grid-4">
         <StatCard
           label="Monthly Income"
           :value="`$${data.user.monthlyIncome.toLocaleString()}`"
@@ -51,10 +52,11 @@
         >
           <template #icon><span style="font-size:1.1rem">⭐</span></template>
         </StatCard>
+      </div>
       </section>
 
       <!-- ── Risk Gauges ──────────────────────────────────────────── -->
-      <section class="mb-section">
+      <section ref="riskScroll" class="mb-section overflow-x drag-scroll">
         <h2 class="section-title">Risk Indicators</h2>
         <div class="grid-3">
           <RiskGauge
@@ -76,7 +78,8 @@
       </section>
 
       <!-- ── Charts Row ───────────────────────────────────────────── -->
-      <section class="grid-2 mb-section">
+      <section ref="chartsScroll" class="mb-section overflow-x drag-scroll">
+      <div class="grid-2">
         <!-- Spending Breakdown -->
         <div class="card">
           <h3 class="card__title">Monthly Spending Breakdown</h3>
@@ -102,6 +105,7 @@
             />
           </div>
         </div>
+      </div>
       </section>
 
       <!-- ── Financial Gains ──────────────────────────────────────── -->
@@ -130,7 +134,8 @@
       </section>
 
       <!-- ── Bottom Row ───────────────────────────────────────────── -->
-      <section class="grid-2 mb-section">
+      <section ref="bottomScroll" class="mb-section overflow-x drag-scroll">
+      <div class="grid-2">
         <!-- Paycheck Split -->
         <div class="card">
           <h3 class="card__title">Recommended Paycheck Split</h3>
@@ -146,7 +151,7 @@
         <!-- Debt Table + Activity -->
         <div class="card">
           <h3 class="card__title">Active Debts</h3>
-          <div class="debt-list">
+          <div ref="debtListEl" class="debt-list drag-scroll">
             <div v-for="debt in data.debts" :key="debt.name" class="debt-row">
               <div>
                 <p class="debt-row__name">{{ debt.name }}</p>
@@ -166,7 +171,7 @@
           </div>
 
           <h3 class="card__title" style="margin-top: 1.5rem">Recent Activity</h3>
-          <div class="activity-list">
+          <div ref="activityListEl" class="activity-list drag-scroll">
             <div v-for="tx in data.recentActivity" :key="tx.description + tx.date" class="activity-row">
               <div>
                 <p class="activity-row__desc">{{ tx.description }}</p>
@@ -181,13 +186,29 @@
             </div>
           </div>
         </div>
+      </div>
       </section>
     </template>
+
   </div>
 </template>
 
 <script setup lang="ts">
 const { data } = useFinancialData()
+const { user } = useAuth()
+
+const kpiScroll      = useDragScroll()
+const riskScroll     = useDragScroll()
+const chartsScroll   = useDragScroll()
+const bottomScroll   = useDragScroll()
+const debtListEl     = useDragScroll()
+const activityListEl = useDragScroll()
+
+const displayName = computed(() => {
+  const meta = user.value?.user_metadata
+  const full = meta?.full_name ?? meta?.name ?? user.value?.email ?? ''
+  return full.split(/[\s@]/)[0]
+})
 
 const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 
@@ -210,7 +231,7 @@ function debtColor(type: string) {
 </script>
 
 <style scoped>
-.dashboard { max-width: 1200px; margin: 0 auto; }
+.dashboard { max-width: 1200px; margin: 0 auto; padding-bottom: 2rem; }
 .dashboard__header {
   display: flex;
   justify-content: space-between;
@@ -236,9 +257,11 @@ function debtColor(type: string) {
   color: var(--color-text-muted);
   margin-bottom: 1rem;
 }
-.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
-.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+.overflow-x { overflow-x: auto; }
+.drag-scroll { user-select: none; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, minmax(180px, 1fr)); gap: 1rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(200px, 1fr)); gap: 1rem; align-items: start; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(280px, 1fr)); gap: 1rem; align-items: start; }
 
 .card {
   background: var(--color-surface);
@@ -259,7 +282,7 @@ function debtColor(type: string) {
 }
 
 /* Debt list */
-.debt-list { display: flex; flex-direction: column; gap: 1rem; margin-top: 0.75rem; }
+.debt-list { display: flex; flex-direction: column; gap: 1rem; margin-top: 0.75rem; max-height: 280px; overflow-y: auto; }
 .debt-row { position: relative; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border); }
 .debt-row:last-child { border-bottom: none; }
 .debt-row { display: grid; grid-template-columns: 1fr auto; gap: 0.25rem; }
@@ -271,7 +294,7 @@ function debtColor(type: string) {
 .debt-row__min { font-size: 0.7rem; color: var(--color-text-muted); text-align: right; }
 
 /* Activity */
-.activity-list { display: flex; flex-direction: column; gap: 0.625rem; margin-top: 0.75rem; }
+.activity-list { display: flex; flex-direction: column; gap: 0.625rem; margin-top: 0.75rem; max-height: 200px; overflow-y: auto; }
 .activity-row { display: flex; justify-content: space-between; align-items: center; }
 .activity-row__desc { font-size: 0.8rem; color: var(--color-text); }
 .activity-row__date { font-size: 0.7rem; color: var(--color-text-muted); margin-top: 0.1rem; }

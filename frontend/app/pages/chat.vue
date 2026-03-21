@@ -7,7 +7,7 @@
 
     <div class="chat-wrap">
       <!-- Messages -->
-      <div ref="messagesEl" class="messages">
+      <div ref="messagesEl" class="messages drag-scroll">
         <div
           v-for="(msg, i) in messages"
           :key="i"
@@ -15,11 +15,29 @@
         >
           <div class="message__bubble">{{ msg.content }}</div>
         </div>
-        <div v-if="streaming" class="message message--ai">
-          <div class="message__bubble">
-            {{ streamBuffer }}<span class="cursor">▌</span>
+
+        <!-- Live streaming bubble -->
+        <template v-if="streaming">
+          <!-- Thinking steps (tool calls) -->
+          <div v-if="thinkingSteps.length" class="thinking-steps">
+            <span
+              v-for="(step, i) in thinkingSteps"
+              :key="i"
+              class="thinking-chip"
+            >{{ step }}</span>
           </div>
-        </div>
+          <div class="message message--ai">
+            <div class="message__bubble">
+              {{ streamBuffer }}<span class="cursor">▌</span>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Connecting overlay -->
+      <div v-if="!sessionReady" class="connecting-banner">
+        <span class="connecting-dot" />
+        Connecting to your advisor…
       </div>
 
       <!-- Input -->
@@ -31,7 +49,11 @@
           rows="2"
           class="chat-input__field"
         />
-        <button type="submit" :disabled="!input.trim() || streaming" class="chat-input__btn">
+        <button
+          type="submit"
+          :disabled="!input.trim() || streaming || !sessionReady"
+          class="chat-input__btn"
+        >
           Send
         </button>
       </form>
@@ -51,39 +73,80 @@ const messages = ref<Message[]>([{
 const input = ref('')
 const streaming = ref(false)
 const streamBuffer = ref('')
-const messagesEl = ref<HTMLElement>()
+const thinkingSteps = ref<string[]>([])
+const messagesEl = useDragScroll()
+
+// Session management
+const sessionId = ref<string | null>(null)
+const sessionReady = computed(() => sessionId.value !== null)
+
+onMounted(async () => {
+  try {
+    const res = await fetch(`${config.public.agentBase}/agent/session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({}),
+    })
+    const data = await res.json()
+    sessionId.value = data.sessionId
+  } catch (e) {
+    console.error('Failed to acquire agent session:', e)
+  }
+})
 
 async function send() {
   const text = input.value.trim()
-  if (!text || streaming.value) return
+  if (!text || streaming.value || !sessionId.value) return
   input.value = ''
   messages.value.push({ role: 'user', content: text })
   streaming.value = true
   streamBuffer.value = ''
+  thinkingSteps.value = []
   await nextTick(); scrollToBottom()
 
   try {
-    const res = await fetch(`${config.public.apiBase}/chat/stream`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: messages.value }),
-    })
+    const res = await fetch(
+      `${config.public.agentBase}/agent/chat/${sessionId.value}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ messages: messages.value }),
+      }
+    )
+
     const reader = res.body!.getReader()
     const decoder = new TextDecoder()
+
     while (true) {
       const { done, value } = await reader.read()
       if (done) break
-      for (const line of decoder.decode(value).split('\n')) {
+      for (const line of decoder.decode(value, { stream: true }).split('\n')) {
         if (!line.startsWith('data: ')) continue
-        const raw = line.slice(6)
-        if (raw === '[DONE]') break
-        try { streamBuffer.value += JSON.parse(raw).text; await nextTick(); scrollToBottom() } catch {}
+        const raw = line.slice(6).trim()
+        if (!raw) continue
+        try {
+          const event = JSON.parse(raw)
+          if (event.type === 'token') {
+            streamBuffer.value += event.text
+            await nextTick(); scrollToBottom()
+          } else if (event.type === 'tool_start') {
+            thinkingSteps.value.push(`Using: ${event.name}`)
+          } else if (event.type === 'done') {
+            break
+          }
+        } catch {}
       }
     }
-    messages.value.push({ role: 'assistant', content: streamBuffer.value })
+
+    if (streamBuffer.value) {
+      messages.value.push({ role: 'assistant', content: streamBuffer.value })
+    }
   } finally {
     streaming.value = false
     streamBuffer.value = ''
+    thinkingSteps.value = []
     await nextTick(); scrollToBottom()
   }
 }
@@ -106,7 +169,9 @@ function scrollToBottom() {
   display: flex;
   flex-direction: column;
   height: calc(100vh - 12rem);
+  position: relative;
 }
+
 .messages {
   flex: 1;
   overflow-y: auto;
@@ -114,7 +179,9 @@ function scrollToBottom() {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  user-select: none;
 }
+
 .message { display: flex; }
 .message--user { justify-content: flex-end; }
 .message--ai { justify-content: flex-start; }
@@ -136,6 +203,47 @@ function scrollToBottom() {
   color: var(--color-text);
   border-bottom-left-radius: 0.25rem;
 }
+
+.thinking-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  padding: 0 0.25rem;
+}
+.thinking-chip {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: var(--color-surface-raised);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+.connecting-banner {
+  position: absolute;
+  bottom: 5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0.375rem 0.875rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+.connecting-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-primary);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.3 } }
+
 .cursor { animation: blink 0.8s infinite; }
 @keyframes blink { 0%,100% { opacity: 1 } 50% { opacity: 0 } }
 

@@ -1,7 +1,5 @@
 <template>
-  <ClientOnly>
-    <Line :data="chartData" :options="chartOptions" :plugins="extraPlugins" />
-  </ClientOnly>
+  <Line :data="chartData" :options="chartOptions" :plugins="extraPlugins" />
 </template>
 
 <script setup lang="ts">

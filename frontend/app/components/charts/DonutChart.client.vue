@@ -1,7 +1,5 @@
 <template>
-  <ClientOnly>
-    <Doughnut :data="chartData" :options="chartOptions" />
-  </ClientOnly>
+  <Doughnut :data="chartData" :options="chartOptions" />
 </template>
 
 <script setup lang="ts">

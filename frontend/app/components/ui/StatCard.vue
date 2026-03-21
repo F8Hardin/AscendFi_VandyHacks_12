@@ -48,11 +48,16 @@ defineProps<{
   letter-spacing: 0.05em;
   margin-bottom: 0.25rem;
 }
+.stat-card__body {
+  min-width: 0;
+}
 .stat-card__value {
-  font-size: 1.625rem;
+  font-size: clamp(1rem, 2.5vw, 1.5rem);
   font-weight: 700;
   color: var(--color-text);
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
 }
 .stat-card__sub {
   font-size: 0.75rem;
