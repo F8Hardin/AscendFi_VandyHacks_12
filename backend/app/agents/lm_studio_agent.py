@@ -58,8 +58,7 @@ def _structured_call(prompt: str) -> dict:
     response = _client().chat.completions.create(
         model=_model(),
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": prompt},
+            {"role": "user", "content": f"{SYSTEM_PROMPT}\n\n---\n{prompt}"},
         ],
         temperature=0.3,
     )
@@ -195,15 +194,22 @@ Respond with JSON matching this schema:
         if context:
             system += f"\n\nUser's current financial context:\n{_context_summary(context)}"
 
-        # Some local model Jinja templates require the first non-system
-        # message to be from the user — strip any leading assistant messages.
-        user_messages = list(messages)
+        # Many local model Jinja templates only support user/assistant roles
+        # and require the conversation to start with a user message.
+        # Fold the system prompt into the first user message to be safe.
+        user_messages = [m for m in messages if m.role in ("user", "assistant")]
+        # drop leading assistant turns
         while user_messages and user_messages[0].role != "user":
             user_messages = user_messages[1:]
 
-        api_messages = [{"role": "system", "content": system}] + [
+        if not user_messages:
+            return
+
+        api_messages = [
             {"role": m.role, "content": m.content} for m in user_messages
         ]
+        # Prepend system context to the first user message
+        api_messages[0]["content"] = f"{system}\n\n---\n{api_messages[0]['content']}"
 
         stream = _client().chat.completions.create(
             model=_model(),
