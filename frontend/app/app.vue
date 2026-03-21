@@ -1,6 +1,16 @@
 <template>
-  <div class="min-h-screen bg-gray-950 text-gray-100">
+  <div class="app-root">
     <NuxtRouteAnnouncer />
-    <NuxtPage />
+    <NuxtLayout>
+      <NuxtPage />
+    </NuxtLayout>
   </div>
 </template>
+
+<style scoped>
+.app-root {
+  min-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+</style>

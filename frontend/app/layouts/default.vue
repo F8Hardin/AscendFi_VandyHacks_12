@@ -2,13 +2,13 @@
   <div class="app-shell">
     <!-- Sidebar -->
     <aside class="sidebar">
-      <div class="sidebar__brand">
+      <NuxtLink to="/" class="sidebar__brand" aria-label="AI Financial home">
         <span class="sidebar__logo">↑</span>
-        <span class="sidebar__name">AscendFi</span>
-      </div>
+        <span class="sidebar__name">AI Financial</span>
+      </NuxtLink>
 
       <nav class="sidebar__nav">
-        <NuxtLink to="/" class="nav-item" active-class="nav-item--active">
+        <NuxtLink to="/dashboard" class="nav-item" active-class="nav-item--active">
           <span class="nav-item__icon">⬛</span> Dashboard
         </NuxtLink>
         <NuxtLink to="/chat" class="nav-item" active-class="nav-item--active">
@@ -18,6 +18,7 @@
 
       <div class="sidebar__footer">
         <div v-if="isUsingDummyData" class="demo-badge">DEMO DATA</div>
+        <button type="button" class="sidebar__logout" @click="onLogout">Log out</button>
       </div>
     </aside>
 
@@ -30,6 +31,12 @@
 
 <script setup lang="ts">
 const { isUsingDummyData } = useFinancialData()
+const { logout } = useAuth()
+
+async function onLogout() {
+  logout()
+  await navigateTo('/login')
+}
 </script>
 
 <style scoped>
@@ -41,8 +48,9 @@ const { isUsingDummyData } = useFinancialData()
 .sidebar {
   width: 220px;
   flex-shrink: 0;
-  background: var(--color-surface);
+  background: color-mix(in srgb, var(--color-surface) 92%, var(--color-bg));
   border-right: 1px solid var(--color-border);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
   padding: 1.5rem 1rem;
@@ -55,6 +63,8 @@ const { isUsingDummyData } = useFinancialData()
   gap: 0.5rem;
   margin-bottom: 2rem;
   padding: 0 0.25rem;
+  text-decoration: none;
+  color: inherit;
 }
 .sidebar__logo {
   font-size: 1.25rem;
@@ -93,7 +103,29 @@ const { isUsingDummyData } = useFinancialData()
   color: var(--color-primary);
 }
 .nav-item__icon { font-size: 0.9rem; }
-.sidebar__footer { padding-top: 1rem; }
+.sidebar__footer {
+  padding-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.sidebar__logout {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.sidebar__logout:hover {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  border-color: var(--color-text-faint);
+}
 .demo-badge {
   background: rgba(245,158,11,0.15);
   color: #f59e0b;

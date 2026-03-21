@@ -40,6 +40,11 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({
+  layout: 'default',
+  middleware: ['auth'],
+})
+
 const config = useRuntimeConfig()
 
 interface Message { role: 'user' | 'assistant'; content: string }
@@ -103,6 +108,7 @@ function scrollToBottom() {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
   height: calc(100vh - 12rem);
@@ -127,14 +133,17 @@ function scrollToBottom() {
   white-space: pre-wrap;
 }
 .message--user .message__bubble {
-  background: var(--color-primary-dim);
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
   border-bottom-right-radius: 0.25rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 .message--ai .message__bubble {
-  background: var(--color-surface-raised);
+  background: var(--color-surface);
   color: var(--color-text);
+  border: 1px solid var(--color-border);
   border-bottom-left-radius: 0.25rem;
+  box-shadow: var(--shadow-card);
 }
 .cursor { animation: blink 0.8s infinite; }
 @keyframes blink { 0%,100% { opacity: 1 } 50% { opacity: 0 } }
@@ -163,7 +172,7 @@ function scrollToBottom() {
 .chat-input__btn {
   padding: 0 1.25rem;
   background: var(--color-primary);
-  color: #000;
+  color: var(--color-on-primary);
   font-weight: 600;
   font-size: 0.875rem;
   border-radius: 0.625rem;

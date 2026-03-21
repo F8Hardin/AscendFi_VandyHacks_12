@@ -36,7 +36,7 @@ const chartData = computed(() => ({
   datasets: [{
     data: props.amounts,
     backgroundColor: resolveColors(props.colors),
-    borderColor: '#111827',
+    borderColor: '#ffffff',
     borderWidth: 3,
     hoverOffset: 6,
   }],
@@ -53,7 +53,7 @@ const chartOptions = computed(() => ({
     },
     tooltip: {
       callbacks: {
-        label: (ctx: any) => ` $${ctx.parsed.toLocaleString()}`,
+        label: (ctx: any) => ` $${ctx.parsed.toLocaleString('en-US')}`,
       },
     },
   },

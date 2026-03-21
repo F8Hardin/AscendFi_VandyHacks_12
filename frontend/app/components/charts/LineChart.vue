@@ -48,7 +48,7 @@ const chartData = computed(() => ({
     label: ds.label,
     data: ds.data,
     borderColor: ds.color,
-    backgroundColor: ds.fill !== false ? hexToRgba(ds.color, 0.08) : 'transparent',
+    backgroundColor: ds.fill !== false ? hexToRgba(ds.color, 0.12) : 'transparent',
     fill: ds.fill !== false,
     tension: 0.4,
     pointBackgroundColor: ds.color,
@@ -67,30 +67,37 @@ const chartOptions = computed(() => ({
   plugins: {
     legend: {
       display: props.showLegend ?? (props.datasets.length > 1),
-      labels: { boxWidth: 12, boxHeight: 12, padding: 16, font: { size: 12 } },
+      labels: {
+        boxWidth: 12,
+        boxHeight: 12,
+        padding: 16,
+        font: { size: 12 },
+        color: '#6e6e73',
+      },
     },
     tooltip: {
       callbacks: {
         label: (ctx: any) => {
           const val = ctx.parsed.y
           const sign = val < 0 ? '-' : ''
-          return ` ${ctx.dataset.label}: ${sign}${prefix.value}${Math.abs(val).toLocaleString()}`
+          return ` ${ctx.dataset.label}: ${sign}${prefix.value}${Math.abs(val).toLocaleString('en-US')}`
         },
       },
     },
   },
   scales: {
     x: {
-      grid: { color: 'rgba(255,255,255,0.04)' },
-      ticks: { font: { size: 11 } },
+      grid: { color: 'rgba(0,0,0,0.06)' },
+      ticks: { font: { size: 11 }, color: '#86868b' },
     },
     y: {
-      grid: { color: 'rgba(255,255,255,0.04)' },
+      grid: { color: 'rgba(0,0,0,0.06)' },
       ticks: {
         font: { size: 11 },
+        color: '#86868b',
         callback: (v: any) => {
           const n = Number(v)
-          return n < 0 ? `-${prefix.value}${Math.abs(n).toLocaleString()}` : `${prefix.value}${n.toLocaleString()}`
+          return n < 0 ? `-${prefix.value}${Math.abs(n).toLocaleString('en-US')}` : `${prefix.value}${n.toLocaleString('en-US')}`
         },
       },
     },
@@ -106,7 +113,7 @@ const extraPlugins = computed(() => {
       if (!scales.y) return
       const y = scales.y.getPixelForValue(0)
       ctx.save()
-      ctx.strokeStyle = 'rgba(255,255,255,0.15)'
+      ctx.strokeStyle = 'rgba(0,0,0,0.1)'
       ctx.lineWidth = 1
       ctx.setLineDash([4, 4])
       ctx.beginPath()
