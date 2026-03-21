@@ -1,25 +1,40 @@
-const SESSION_COOKIE = 'ai_financial_session'
-
 /**
- * Demo auth: session cookie so SSR middleware can gate routes before Supabase/real auth.
+ * useAuth — thin interface over Supabase authentication.
+ * Supabase-specific imports are contained here so swapping providers only
+ * requires changes to this file.
  */
 export function useAuth() {
-  const session = useCookie<string | null>(SESSION_COOKIE, {
-    default: () => null,
-    maxAge: 60 * 60 * 24 * 14,
-    path: '/',
-    sameSite: 'lax',
-  })
+  const supabase = useSupabaseClient()
+  const user = useSupabaseUser()
+  const loading = ref(false)
+  const error = ref<string | null>(null)
 
-  const isLoggedIn = computed(() => Boolean(session.value))
+  const isLoggedIn = computed(() => !!user.value)
 
-  function login() {
-    session.value = 'authenticated'
+  async function signIn(email: string, password: string) {
+    loading.value = true
+    error.value = null
+    const { error: err } = await supabase.auth.signInWithPassword({ email, password })
+    if (err) error.value = err.message
+    loading.value = false
+    return !err
   }
 
-  function logout() {
-    session.value = null
+  async function signUp(email: string, password: string) {
+    loading.value = true
+    error.value = null
+    const { error: err } = await supabase.auth.signUp({ email, password })
+    if (err) error.value = err.message
+    loading.value = false
+    return !err
   }
 
-  return { session, isLoggedIn, login, logout }
+  async function signOut() {
+    loading.value = true
+    await supabase.auth.signOut()
+    loading.value = false
+    await navigateTo('/login')
+  }
+
+  return { user, isLoggedIn, loading, error, signIn, signUp, signOut }
 }

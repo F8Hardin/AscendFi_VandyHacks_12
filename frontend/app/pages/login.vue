@@ -1,15 +1,14 @@
 <template>
   <div class="page">
-    <h1 class="page__title">Log in</h1>
+    <h1 class="page__title">{{ isSignUp ? 'Create account' : 'Sign in' }}</h1>
     <p class="page__lead">
-      Sign in to open the dashboard and AI advisor. This is a demo session (cookie) until Supabase or another provider
-      is connected.
+      {{ isSignUp ? 'Create an account to get started.' : 'Sign in to open the dashboard and AI advisor.' }}
     </p>
 
     <form class="page__form" @submit.prevent="onSubmit">
       <label class="page__field">
         <span class="page__label">Email</span>
-        <input v-model="email" type="email" class="page__input" placeholder="you@example.com" autocomplete="username" />
+        <input v-model="email" type="email" class="page__input" placeholder="you@example.com" autocomplete="username" required />
       </label>
       <label class="page__field">
         <span class="page__label">Password</span>
@@ -19,13 +18,21 @@
           class="page__input"
           placeholder="••••••••"
           autocomplete="current-password"
+          required
         />
       </label>
-      <p class="page__demo-hint">Demo: use any email and password — credentials are not verified yet.</p>
-      <button type="submit" class="page__cta" :disabled="submitting">
-        {{ submitting ? 'Signing in…' : 'Sign in' }}
+      <p v-if="error" class="page__error">{{ error }}</p>
+      <p v-if="successMsg" class="page__success">{{ successMsg }}</p>
+      <button type="submit" class="page__cta" :disabled="loading">
+        {{ loading ? 'Loading…' : isSignUp ? 'Create account' : 'Sign in' }}
       </button>
     </form>
+
+    <p class="page__hint">
+      <button type="button" class="page__toggle" @click="isSignUp = !isSignUp">
+        {{ isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up" }}
+      </button>
+    </p>
 
     <p class="page__hint">
       <NuxtLink to="/" class="page__link">← Back to home</NuxtLink>
@@ -40,11 +47,12 @@ definePageMeta({
 })
 
 const route = useRoute()
-const { login } = useAuth()
+const { signIn, signUp, loading, error } = useAuth()
 
 const email = ref('')
 const password = ref('')
-const submitting = ref(false)
+const isSignUp = ref(false)
+const successMsg = ref('')
 
 useHead({
   title: 'Log in — AI Financial',
@@ -58,12 +66,13 @@ function safeRedirectPath(): string {
 }
 
 async function onSubmit() {
-  submitting.value = true
-  try {
-    login()
-    await navigateTo(safeRedirectPath())
-  } finally {
-    submitting.value = false
+  successMsg.value = ''
+  if (isSignUp.value) {
+    const ok = await signUp(email.value, password.value)
+    if (ok) successMsg.value = 'Check your email to confirm your account.'
+  } else {
+    const ok = await signIn(email.value, password.value)
+    if (ok) await navigateTo(safeRedirectPath())
   }
 }
 </script>
@@ -124,11 +133,26 @@ async function onSubmit() {
 .page__input::placeholder {
   color: var(--color-text-faint);
 }
-.page__demo-hint {
+.page__error {
   margin: 0;
-  font-size: 0.75rem;
-  line-height: 1.45;
-  color: var(--color-text-faint);
+  font-size: 0.8rem;
+  color: var(--color-danger);
+}
+.page__success {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-success);
+}
+.page__toggle {
+  background: none;
+  border: none;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0;
+}
+.page__toggle:hover {
+  color: var(--color-primary);
 }
 .page__cta {
   display: inline-flex;

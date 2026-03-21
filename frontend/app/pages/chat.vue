@@ -7,7 +7,7 @@
 
     <div class="chat-wrap">
       <!-- Messages -->
-      <div ref="messagesEl" class="messages drag-scroll">
+      <div ref="messagesEl" class="messages">
         <div
           v-for="(msg, i) in messages"
           :key="i"
@@ -34,8 +34,14 @@
         </template>
       </div>
 
+      <!-- Error overlay -->
+      <div v-if="connectionError" class="status-overlay status-overlay--error">
+        <span class="status-overlay__icon">⚠</span>
+        <span>Agent container is not reachable. Make sure the agent service is running in Docker and try refreshing.</span>
+      </div>
+
       <!-- Connecting overlay -->
-      <div v-if="!sessionReady" class="connecting-banner">
+      <div v-else-if="!sessionReady" class="status-overlay status-overlay--connecting">
         <span class="connecting-dot" />
         Connecting to your advisor…
       </div>
@@ -51,7 +57,7 @@
         />
         <button
           type="submit"
-          :disabled="!input.trim() || streaming || !sessionReady"
+          :disabled="!input.trim() || streaming || !sessionReady || connectionError"
           class="chat-input__btn"
         >
           Send
@@ -79,11 +85,12 @@ const input = ref('')
 const streaming = ref(false)
 const streamBuffer = ref('')
 const thinkingSteps = ref<string[]>([])
-const messagesEl = useDragScroll()
+const messagesEl = ref<HTMLElement | null>(null)
 
 // Session management
 const sessionId = ref<string | null>(null)
 const sessionReady = computed(() => sessionId.value !== null)
+const connectionError = ref(false)
 
 onMounted(async () => {
   try {
@@ -93,10 +100,12 @@ onMounted(async () => {
       credentials: 'include',
       body: JSON.stringify({}),
     })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const data = await res.json()
     sessionId.value = data.sessionId
   } catch (e) {
     console.error('Failed to acquire agent session:', e)
+    connectionError.value = true
   }
 })
 
@@ -121,10 +130,12 @@ async function send() {
       }
     )
 
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
     const reader = res.body!.getReader()
     const decoder = new TextDecoder()
 
-    while (true) {
+    outer: while (true) {
       const { done, value } = await reader.read()
       if (done) break
       for (const line of decoder.decode(value, { stream: true }).split('\n')) {
@@ -138,8 +149,10 @@ async function send() {
             await nextTick(); scrollToBottom()
           } else if (event.type === 'tool_start') {
             thinkingSteps.value.push(`Using: ${event.name}`)
+          } else if (event.type === 'error') {
+            throw new Error(event.message)
           } else if (event.type === 'done') {
-            break
+            break outer
           }
         } catch {}
       }
@@ -148,6 +161,10 @@ async function send() {
     if (streamBuffer.value) {
       messages.value.push({ role: 'assistant', content: streamBuffer.value })
     }
+  } catch (e) {
+    console.error('Chat stream failed:', e)
+    connectionError.value = true
+    sessionId.value = null
   } finally {
     streaming.value = false
     streamBuffer.value = ''
@@ -228,21 +245,34 @@ function scrollToBottom() {
   border: 1px solid var(--color-border);
 }
 
-.connecting-banner {
+.status-overlay {
   position: absolute;
-  bottom: 5rem;
-  left: 50%;
-  transform: translateX(-50%);
+  inset: 0;
+  bottom: 4.5rem; /* sit above input bar */
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  background: var(--color-surface-raised);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  padding: 0.375rem 0.875rem;
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
+  justify-content: center;
+  gap: 0.625rem;
+  font-size: 0.875rem;
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
   pointer-events: none;
+}
+.status-overlay--error {
+  background: color-mix(in srgb, var(--color-danger-dim) 80%, transparent);
+  color: var(--color-danger);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-danger) 20%, transparent);
+  padding: 0 2rem;
+  text-align: center;
+  line-height: 1.5;
+}
+.status-overlay__icon {
+  font-size: 1.125rem;
+  flex-shrink: 0;
+}
+.status-overlay--connecting {
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
 }
 .connecting-dot {
   width: 0.5rem;
