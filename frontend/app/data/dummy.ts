@@ -46,7 +46,33 @@ export const dummyData = {
 
   debtTimeline: {
     labels: ['Now', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb'],
-    balances: [13100, 12580, 12040, 11480, 10900, 10300, 9680, 9040, 8380, 7700, 6998, 6272],
+    datasets: [
+      {
+        label: 'Total Debt',
+        data: [13100, 12580, 12040, 11480, 10900, 10300, 9680, 9040, 8380, 7700, 6998, 6272],
+        color: '#ef4444',
+        fill: true,
+      },
+    ],
+  },
+
+  financialGains: {
+    labels: ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'],
+    datasets: [
+      {
+        label: 'Net Monthly Gain',
+        data: [-820, -340, 150, 280, 520, 730],
+        color: '#22c55e',
+        fill: true,
+      },
+      {
+        label: 'Savings Balance',
+        data: [0, 0, 150, 430, 950, 1680],
+        color: '#3b82f6',
+        fill: false,
+        dashed: true,
+      },
+    ],
   },
 
   paycheckSplit: {

@@ -100,7 +100,35 @@
             <ClientOnly>
               <LineChart
                 :labels="data.debtTimeline.labels"
-                :balances="data.debtTimeline.balances"
+                :datasets="data.debtTimeline.datasets"
+                y-prefix="$"
+              />
+            </ClientOnly>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Financial Gains ──────────────────────────────────────── -->
+      <section class="mb-section">
+        <div class="card">
+          <div class="gains-header">
+            <div>
+              <h3 class="card__title">Financial Gains</h3>
+              <p class="card__sub">Monthly net gain and savings growth over the last 6 months</p>
+            </div>
+            <div class="gains-stat">
+              <span class="gains-stat__label">This Month</span>
+              <span class="gains-stat__value">+$730</span>
+            </div>
+          </div>
+          <div style="height: 300px; margin-top: 1rem;">
+            <ClientOnly>
+              <LineChart
+                :labels="data.financialGains.labels"
+                :datasets="data.financialGains.datasets"
+                y-prefix="$"
+                :show-legend="true"
+                :show-zero-line="true"
               />
             </ClientOnly>
           </div>
@@ -258,4 +286,27 @@ function debtColor(type: string) {
 .activity-row__amount { font-size: 0.875rem; font-weight: 600; }
 
 .text-warning { color: var(--color-warning) !important; }
+
+/* Financial gains */
+.gains-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.gains-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.gains-stat__label {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.gains-stat__value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
 </style>
