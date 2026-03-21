@@ -52,8 +52,9 @@ export async function createContainer(sessionId: string): Promise<SessionRecord>
       ExtraHosts: ['host.docker.internal:host-gateway'], // required on Linux
     },
     Env: [
-      `ANTHROPIC_API_KEY=${process.env.ANTHROPIC_API_KEY || ''}`,
       `BACKEND_URL=http://host.docker.internal:8000`,
+      `LM_STUDIO_BASE_URL=${process.env.LM_STUDIO_BASE_URL || 'http://host.docker.internal:1234/v1'}`,
+      `LM_STUDIO_MODEL=${process.env.LM_STUDIO_MODEL || 'local-model'}`,
     ],
   });
 
