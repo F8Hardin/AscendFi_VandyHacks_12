@@ -1,10 +1,20 @@
 <template>
-  <div class="donut-wrap">
-    <canvas ref="canvasEl" />
-  </div>
+  <ClientOnly>
+    <Doughnut :data="chartData" :options="chartOptions" />
+  </ClientOnly>
 </template>
 
 <script setup lang="ts">
+import { Doughnut } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+} from 'chart.js'
+
+ChartJS.register(ArcElement, Tooltip, Legend)
+
 const props = defineProps<{
   labels: string[]
   amounts: number[]
@@ -12,62 +22,40 @@ const props = defineProps<{
   cutout?: string
 }>()
 
-const canvasEl = ref<HTMLCanvasElement>()
-let chartInstance: any = null
-
-onMounted(async () => {
-  const { default: Chart } = await import('chart.js/auto')
-
-  // Resolve CSS variable colors
+// Resolve CSS variables to real color values at render time
+function resolveColors(colors: string[]) {
+  if (typeof window === 'undefined') return colors
   const style = getComputedStyle(document.documentElement)
-  const resolvedColors = props.colors.map(c =>
-    c.startsWith('var(') ? style.getPropertyValue(c.slice(4, -1).trim()).trim() : c
+  return colors.map(c =>
+    c.startsWith('var(') ? style.getPropertyValue(c.slice(4, -1).trim()).trim() || c : c
   )
+}
 
-  chartInstance = new Chart(canvasEl.value!, {
-    type: 'doughnut',
-    data: {
-      labels: props.labels,
-      datasets: [{
-        data: props.amounts,
-        backgroundColor: resolvedColors,
-        borderColor: '#111827',
-        borderWidth: 3,
-        hoverOffset: 6,
-      }],
+const chartData = computed(() => ({
+  labels: props.labels,
+  datasets: [{
+    data: props.amounts,
+    backgroundColor: resolveColors(props.colors),
+    borderColor: '#111827',
+    borderWidth: 3,
+    hoverOffset: 6,
+  }],
+}))
+
+const chartOptions = computed(() => ({
+  cutout: props.cutout ?? '68%',
+  responsive: true,
+  maintainAspectRatio: true,
+  plugins: {
+    legend: {
+      position: 'bottom' as const,
+      labels: { padding: 14, boxWidth: 12, boxHeight: 12, font: { size: 12 } },
     },
-    options: {
-      cutout: props.cutout ?? '68%',
-      responsive: true,
-      maintainAspectRatio: true,
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: {
-            padding: 14,
-            boxWidth: 12,
-            boxHeight: 12,
-            font: { size: 12 },
-          },
-        },
-        tooltip: {
-          callbacks: {
-            label: (ctx) => ` $${ctx.parsed.toLocaleString()}`,
-          },
-        },
+    tooltip: {
+      callbacks: {
+        label: (ctx: any) => ` $${ctx.parsed.toLocaleString()}`,
       },
     },
-  })
-})
-
-onBeforeUnmount(() => chartInstance?.destroy())
+  },
+}))
 </script>
-
-<style scoped>
-.donut-wrap {
-  position: relative;
-  width: 100%;
-  max-width: 320px;
-  margin: 0 auto;
-}
-</style>

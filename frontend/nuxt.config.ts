@@ -4,7 +4,7 @@ export default defineNuxtConfig({
   modules: ['@nuxtjs/tailwindcss'],
   css: ['~/assets/css/tokens.css'],
   build: {
-    transpile: ['chart.js'],
+    transpile: ['chart.js', 'vue-chartjs'],
   },
   vite: {
     optimizeDeps: {
