@@ -81,13 +81,11 @@
         <div class="card">
           <h3 class="card__title">Monthly Spending Breakdown</h3>
           <p class="card__sub">Total: ${{ spendingTotal.toLocaleString() }}</p>
-          <ClientOnly>
-            <DonutChart
-              :labels="data.spending.labels"
-              :amounts="data.spending.amounts"
-              :colors="data.spending.colors"
-            />
-          </ClientOnly>
+          <DonutChart
+            :labels="data.spending.labels"
+            :amounts="data.spending.amounts"
+            :colors="data.spending.colors"
+          />
         </div>
 
         <!-- Debt Payoff Timeline -->
@@ -97,13 +95,11 @@
             Est. payoff: <span style="color:var(--color-primary)">~12 months</span> with optimized plan
           </p>
           <div style="height: 260px; margin-top: 1rem;">
-            <ClientOnly>
-              <LineChart
-                :labels="data.debtTimeline.labels"
-                :datasets="data.debtTimeline.datasets"
-                y-prefix="$"
-              />
-            </ClientOnly>
+            <LineChart
+              :labels="data.debtTimeline.labels"
+              :datasets="data.debtTimeline.datasets"
+              y-prefix="$"
+            />
           </div>
         </div>
       </section>
@@ -122,15 +118,13 @@
             </div>
           </div>
           <div style="height: 300px; margin-top: 1rem;">
-            <ClientOnly>
-              <LineChart
-                :labels="data.financialGains.labels"
-                :datasets="data.financialGains.datasets"
-                y-prefix="$"
-                :show-legend="true"
-                :show-zero-line="true"
-              />
-            </ClientOnly>
+            <LineChart
+              :labels="data.financialGains.labels"
+              :datasets="data.financialGains.datasets"
+              y-prefix="$"
+              :show-legend="true"
+              :show-zero-line="true"
+            />
           </div>
         </div>
       </section>
@@ -141,14 +135,12 @@
         <div class="card">
           <h3 class="card__title">Recommended Paycheck Split</h3>
           <p class="card__sub">Based on ${{ data.user.monthlyIncome.toLocaleString() }}/mo income</p>
-          <ClientOnly>
-            <DonutChart
-              :labels="data.paycheckSplit.labels"
-              :amounts="data.paycheckSplit.amounts"
-              :colors="data.paycheckSplit.colors"
-              cutout="60%"
-            />
-          </ClientOnly>
+          <DonutChart
+            :labels="data.paycheckSplit.labels"
+            :amounts="data.paycheckSplit.amounts"
+            :colors="data.paycheckSplit.colors"
+            cutout="60%"
+          />
         </div>
 
         <!-- Debt Table + Activity -->

@@ -3,10 +3,18 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: ['@nuxtjs/tailwindcss'],
   css: ['~/assets/css/tokens.css'],
+  build: {
+    transpile: ['chart.js'],
+  },
+  vite: {
+    optimizeDeps: {
+      include: ['chart.js', 'chart.js/auto'],
+    },
+  },
   runtimeConfig: {
     public: {
       apiBase: 'http://localhost:8000/api',
-      useDummyData: 'true', // overridden by NUXT_PUBLIC_USE_DUMMY_DATA env var
+      useDummyData: 'true',
     },
   },
 })
