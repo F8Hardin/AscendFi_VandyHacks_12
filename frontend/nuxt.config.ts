@@ -15,6 +15,11 @@ export default defineNuxtConfig({
     transpile: ['chart.js', 'vue-chartjs'],
   },
   vite: {
+    // Avoid "null is not an object (reading 'currentRenderingInstance.ce')" during SSR
+    // when multiple Vue copies get bundled (vue-chartjs, @nuxtjs/tailwindcss, etc.).
+    resolve: {
+      dedupe: ['vue', 'vue-router'],
+    },
     optimizeDeps: {
       include: ['chart.js'],
     },

@@ -27,10 +27,15 @@ defineProps<{
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
   padding: 1.25rem;
   display: flex;
   align-items: flex-start;
   gap: 1rem;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.stat-card:hover {
+  box-shadow: var(--shadow-card-hover);
 }
 .stat-card__icon {
   width: 2.75rem;

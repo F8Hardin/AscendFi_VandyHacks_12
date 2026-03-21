@@ -1,137 +1,167 @@
 <template>
-  <div class="login-shell">
-    <div class="login-card">
-      <div class="login-brand">
-        <span class="login-brand__logo">↑</span>
-        <span class="login-brand__name">AscendFi</span>
-      </div>
+  <div class="page">
+    <h1 class="page__title">Log in</h1>
+    <p class="page__lead">
+      Sign in to open the dashboard and AI advisor. This is a demo session (cookie) until Supabase or another provider
+      is connected.
+    </p>
 
-      <h1 class="login-title">{{ isSignUp ? 'Create account' : 'Sign in' }}</h1>
-
-      <form class="login-form" @submit.prevent="submit">
-        <div class="field">
-          <label class="field__label">Email</label>
-          <input v-model="email" class="field__input" type="email" required autocomplete="email" />
-        </div>
-
-        <div class="field">
-          <label class="field__label">Password</label>
-          <input v-model="password" class="field__input" type="password" required autocomplete="current-password" />
-        </div>
-
-        <p v-if="error" class="login-error">{{ error }}</p>
-        <p v-if="successMsg" class="login-success">{{ successMsg }}</p>
-
-        <button class="login-btn" type="submit" :disabled="loading">
-          {{ loading ? 'Loading…' : isSignUp ? 'Create account' : 'Sign in' }}
-        </button>
-      </form>
-
-      <button class="login-toggle" @click="isSignUp = !isSignUp">
-        {{ isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up" }}
+    <form class="page__form" @submit.prevent="onSubmit">
+      <label class="page__field">
+        <span class="page__label">Email</span>
+        <input v-model="email" type="email" class="page__input" placeholder="you@example.com" autocomplete="username" />
+      </label>
+      <label class="page__field">
+        <span class="page__label">Password</span>
+        <input
+          v-model="password"
+          type="password"
+          class="page__input"
+          placeholder="••••••••"
+          autocomplete="current-password"
+        />
+      </label>
+      <p class="page__demo-hint">Demo: use any email and password — credentials are not verified yet.</p>
+      <button type="submit" class="page__cta" :disabled="submitting">
+        {{ submitting ? 'Signing in…' : 'Sign in' }}
       </button>
-    </div>
+    </form>
+
+    <p class="page__hint">
+      <NuxtLink to="/" class="page__link">← Back to home</NuxtLink>
+    </p>
   </div>
 </template>
 
 <script setup lang="ts">
-definePageMeta({ layout: false })
+definePageMeta({
+  layout: 'marketing',
+  middleware: ['guest'],
+})
 
-const { signIn, signUp, loading, error } = useAuth()
+const route = useRoute()
+const { login } = useAuth()
 
 const email = ref('')
 const password = ref('')
-const isSignUp = ref(false)
-const successMsg = ref('')
+const submitting = ref(false)
 
-async function submit() {
-  successMsg.value = ''
-  if (isSignUp.value) {
-    const ok = await signUp(email.value, password.value)
-    if (ok) successMsg.value = 'Check your email to confirm your account.'
-  } else {
-    const ok = await signIn(email.value, password.value)
-    if (ok) await navigateTo('/')
+useHead({
+  title: 'Log in — AI Financial',
+  meta: [{ name: 'description', content: 'Sign in to access dashboard and AI advisor.' }],
+})
+
+function safeRedirectPath(): string {
+  const r = route.query.redirect
+  if (typeof r !== 'string' || !r.startsWith('/') || r.startsWith('//')) return '/dashboard'
+  return r
+}
+
+async function onSubmit() {
+  submitting.value = true
+  try {
+    login()
+    await navigateTo(safeRedirectPath())
+  } finally {
+    submitting.value = false
   }
 }
 </script>
 
 <style scoped>
-.login-shell {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-bg);
+.page {
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 4rem;
 }
-.login-card {
-  width: 100%;
-  max-width: 380px;
+.page__title {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: 1rem;
+}
+.page__lead {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--color-text-muted);
+  margin-bottom: 1.75rem;
+}
+.page__form {
+  padding: 1.5rem;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
-  padding: 2rem;
-}
-.login-brand {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  flex-direction: column;
+  gap: 1rem;
 }
-.login-brand__logo {
-  font-size: 1.25rem;
-  color: var(--color-primary);
-  font-weight: 900;
+.page__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
-.login-brand__name {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: var(--color-text);
-  letter-spacing: -0.02em;
+.page__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
 }
-.login-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--color-text);
-  margin-bottom: 1.25rem;
-}
-.login-form { display: flex; flex-direction: column; gap: 1rem; }
-.field { display: flex; flex-direction: column; gap: 0.35rem; }
-.field__label { font-size: 0.8rem; font-weight: 600; color: var(--color-text-muted); }
-.field__input {
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
+.page__input {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
   border-radius: 0.5rem;
-  padding: 0.6rem 0.75rem;
-  font-size: 0.9rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-raised);
   color: var(--color-text);
+  font-size: 0.9rem;
   outline: none;
   transition: border-color 0.15s;
 }
-.field__input:focus { border-color: var(--color-primary); }
-.login-error { font-size: 0.8rem; color: var(--color-danger); }
-.login-success { font-size: 0.8rem; color: var(--color-success); }
-.login-btn {
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
-  border-radius: 0.5rem;
-  padding: 0.7rem 1rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s;
+.page__input:focus {
+  border-color: var(--color-primary);
 }
-.login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.login-toggle {
-  margin-top: 1rem;
+.page__input::placeholder {
+  color: var(--color-text-faint);
+}
+.page__demo-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--color-text-faint);
+}
+.page__cta {
+  display: inline-flex;
   width: 100%;
-  background: none;
+  justify-content: center;
+  padding: 0.7rem 1.25rem;
+  margin-top: 0.25rem;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-radius: 0.5rem;
   border: none;
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
   cursor: pointer;
+  transition: filter 0.15s, opacity 0.15s;
+}
+.page__cta:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+.page__cta:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+.page__hint {
+  margin: 1.5rem 0 0;
+  font-size: 0.875rem;
   text-align: center;
 }
-.login-toggle:hover { color: var(--color-primary); }
+.page__link {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.page__link:hover {
+  text-decoration: underline;
+}
 </style>
