@@ -16,7 +16,14 @@ const canvasEl = ref<HTMLCanvasElement>()
 let chartInstance: any = null
 
 onMounted(async () => {
-  const { Chart } = await import('chart.js')
+  const {
+    Chart,
+    DoughnutController,
+    ArcElement,
+    Tooltip,
+    Legend,
+  } = await import('chart.js')
+  Chart.register(DoughnutController, ArcElement, Tooltip, Legend)
 
   // Resolve CSS variable colors
   const style = getComputedStyle(document.documentElement)
