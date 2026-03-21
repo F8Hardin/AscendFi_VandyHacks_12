@@ -82,6 +82,7 @@ const input = ref('')
 const streaming = ref(false)
 const streamBuffer = ref('')
 const messagesEl = ref<HTMLElement>()
+const sessionId = ref<string | null>(null)
 
 // ── Position & size ──────────────────────────────────────────────
 const TAB_W = 22
@@ -105,7 +106,7 @@ const containerStyle = computed(() => {
   }
 })
 
-function toggle() {
+async function toggle() {
   open.value = true
   if (!posInited.value) {
     pos.value = {
@@ -113,6 +114,20 @@ function toggle() {
       y: window.innerHeight - size.value.h - 24,
     }
     posInited.value = true
+  }
+  if (!sessionId.value) {
+    try {
+      const res = await fetch(`${config.public.agentBase}/agent/session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({}),
+      })
+      const data = await res.json()
+      sessionId.value = data.sessionId
+    } catch (e) {
+      console.error('Failed to acquire agent session:', e)
+    }
   }
 }
 
@@ -180,26 +195,50 @@ async function send() {
   if (!text || streaming.value) return
   input.value = ''
   messages.value.push({ role: 'user', content: text })
+  if (!sessionId.value) {
+    messages.value.push({ role: 'assistant', content: 'CONNECTION ERROR: Please contact system admin' })
+    return
+  }
   streaming.value = true
   streamBuffer.value = ''
   await nextTick(); scrollToBottom()
 
   try {
-    const res = await fetch(`${config.public.apiBase}/chat/stream`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: messages.value }),
-    })
+    let res: Response
+    try {
+      res = await fetch(
+        `${config.public.agentBase}/agent/chat/${sessionId.value}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ messages: messages.value }),
+        }
+      )
+    } catch {
+      messages.value.push({ role: 'assistant', content: 'CONNECTION ERROR: Please contact system admin' })
+      return
+    }
+    if (!res.ok) {
+      messages.value.push({ role: 'assistant', content: 'CONNECTION ERROR: Please contact system admin' })
+      return
+    }
     const reader = res.body!.getReader()
     const decoder = new TextDecoder()
     while (true) {
       const { done, value } = await reader.read()
       if (done) break
-      for (const line of decoder.decode(value).split('\n')) {
+      for (const line of decoder.decode(value, { stream: true }).split('\n')) {
         if (!line.startsWith('data: ')) continue
-        const raw = line.slice(6)
-        if (raw === '[DONE]') break
-        try { streamBuffer.value += JSON.parse(raw).text; await nextTick(); scrollToBottom() } catch {}
+        const raw = line.slice(6).trim()
+        if (!raw) continue
+        try {
+          const event = JSON.parse(raw)
+          if (event.type === 'token') {
+            streamBuffer.value += event.text
+            await nextTick(); scrollToBottom()
+          }
+        } catch {}
       }
     }
     messages.value.push({ role: 'assistant', content: streamBuffer.value })
