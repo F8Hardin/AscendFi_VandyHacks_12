@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional
+from app.models.financial import FinancialContext
 
 
 class Message(BaseModel):
@@ -9,4 +10,4 @@ class Message(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: List[Message]
-    context: Optional[dict] = None
+    context: Optional[FinancialContext] = None

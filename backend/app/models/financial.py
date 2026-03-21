@@ -1,0 +1,84 @@
+from pydantic import BaseModel
+from typing import List, Optional, Dict, Any
+from enum import Enum
+
+
+class LifeEvent(str, Enum):
+    JOB_LOSS = "job_loss"
+    MEDICAL_EMERGENCY = "medical_emergency"
+    DIVORCE = "divorce"
+    NEW_CHILD = "new_child"
+    RELOCATION = "relocation"
+    OTHER = "other"
+
+
+class Bill(BaseModel):
+    name: str
+    amount: float
+    due_date: str  # ISO date string
+    category: str
+
+
+class Debt(BaseModel):
+    name: str
+    balance: float
+    interest_rate: float
+    minimum_payment: float
+    type: str  # credit_card, student_loan, medical, etc.
+
+
+class SpendingEntry(BaseModel):
+    date: str
+    amount: float
+    category: str
+    description: Optional[str] = None
+
+
+class FinancialContext(BaseModel):
+    monthly_income: float
+    checking_balance: float
+    savings_balance: float = 0.0
+    bills: List[Bill] = []
+    debts: List[Debt] = []
+    spending_history: List[SpendingEntry] = []
+    credit_score: Optional[int] = None
+    life_events: List[LifeEvent] = []
+    extra: Optional[Dict[str, Any]] = None
+
+
+class RiskLevel(str, Enum):
+    LOW = "low"
+    MODERATE = "moderate"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class PredictionResult(BaseModel):
+    risk_level: RiskLevel
+    probability: float  # 0.0 - 1.0
+    summary: str
+    contributing_factors: List[str]
+    recommendations: List[str]
+
+
+class DebtPlan(BaseModel):
+    strategy: str  # e.g. "avalanche", "snowball", "hybrid"
+    steps: List[Dict[str, Any]]
+    estimated_payoff_months: int
+    total_interest_saved: float
+    summary: str
+
+
+class SpendingAnalysis(BaseModel):
+    top_categories: List[Dict[str, Any]]
+    anomalies: List[str]
+    life_event_impact: Optional[str]
+    trend: str
+    recommendations: List[str]
+
+
+class AutonomousPlan(BaseModel):
+    paycheck_split: Dict[str, float]  # category -> amount
+    investment_suggestions: List[Dict[str, Any]]
+    emergency_fund_target: float
+    summary: str
