@@ -25,18 +25,7 @@ const canvasEl = ref<HTMLCanvasElement>()
 let chartInstance: any = null
 
 onMounted(async () => {
-  const {
-    Chart,
-    LineController,
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    Filler,
-    Tooltip,
-    Legend,
-  } = await import('chart.js')
-  Chart.register(LineController, CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip, Legend)
+  const { default: Chart } = await import('chart.js/auto')
 
   const prefix = props.yPrefix ?? ''
 
