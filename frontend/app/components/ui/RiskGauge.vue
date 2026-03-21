@@ -51,6 +51,7 @@ const dashOffset = computed(() => circumference - (props.probability * circumfer
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
   padding: 1.5rem 1rem;
   display: flex;
   flex-direction: column;
