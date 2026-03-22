@@ -151,6 +151,11 @@ async function send() {
           if (event.type === 'token') {
             streamBuffer.value += event.text
             await nextTick(); scrollToBottom()
+          } else if (event.type === 'thinking') {
+            // reasoning tokens — just show a generic indicator, not the full text
+            if (!thinkingSteps.value.includes('Thinking…')) {
+              thinkingSteps.value.push('Thinking…')
+            }
           } else if (event.type === 'tool_start') {
             thinkingSteps.value.push(`Using: ${event.name}`)
           } else if (event.type === 'error') {

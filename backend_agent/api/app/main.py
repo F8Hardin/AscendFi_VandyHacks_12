@@ -2,6 +2,8 @@ from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
+from app.routers import chat
+
 load_dotenv()
 
 app = FastAPI(title="Financial Recovery AI", version="0.1.0")
@@ -23,6 +25,7 @@ async def api_health():
 
 
 app.include_router(api)
+app.include_router(chat.router)
 
 
 @app.get("/health")
