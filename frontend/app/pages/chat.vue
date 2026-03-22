@@ -13,7 +13,7 @@
           :key="i"
           :class="['message', msg.role === 'user' ? 'message--user' : 'message--ai']"
         >
-          <div class="message__bubble">{{ msg.content }}</div>
+          <div class="message__bubble prose" v-html="renderMarkdown(msg.content)" />
         </div>
 
         <!-- Live streaming bubble -->
@@ -27,9 +27,7 @@
             >{{ step }}</span>
           </div>
           <div class="message message--ai">
-            <div class="message__bubble">
-              {{ streamBuffer }}<span class="cursor">▌</span>
-            </div>
+            <div class="message__bubble prose" v-html="renderMarkdown(streamBuffer) + '<span class=\'cursor\'>▌</span>'" />
           </div>
         </template>
       </div>
@@ -72,6 +70,12 @@
 </template>
 
 <script setup lang="ts">
+import { marked } from 'marked'
+
+function renderMarkdown(text: string): string {
+  return marked.parse(text, { async: false }) as string
+}
+
 definePageMeta({
   layout: 'default',
   middleware: ['auth'],
@@ -222,7 +226,42 @@ function scrollToBottom() {
   border-radius: 1rem;
   font-size: 0.875rem;
   line-height: 1.6;
-  white-space: pre-wrap;
+}
+
+/* Markdown prose styles for AI bubbles */
+.message--ai .message__bubble :deep(h1),
+.message--ai .message__bubble :deep(h2),
+.message--ai .message__bubble :deep(h3) {
+  font-weight: 700;
+  margin: 0.75rem 0 0.25rem;
+  line-height: 1.3;
+}
+.message--ai .message__bubble :deep(h1) { font-size: 1.05rem; }
+.message--ai .message__bubble :deep(h2) { font-size: 0.975rem; }
+.message--ai .message__bubble :deep(h3) { font-size: 0.9rem; }
+.message--ai .message__bubble :deep(p) { margin: 0.4rem 0; }
+.message--ai .message__bubble :deep(p:first-child) { margin-top: 0; }
+.message--ai .message__bubble :deep(p:last-child) { margin-bottom: 0; }
+.message--ai .message__bubble :deep(ul),
+.message--ai .message__bubble :deep(ol) {
+  margin: 0.4rem 0;
+  padding-left: 1.25rem;
+}
+.message--ai .message__bubble :deep(li) { margin: 0.2rem 0; }
+.message--ai .message__bubble :deep(strong) { font-weight: 600; }
+.message--ai .message__bubble :deep(em) { font-style: italic; }
+.message--ai .message__bubble :deep(code) {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.3rem;
+  font-size: 0.8rem;
+  font-family: monospace;
+}
+.message--ai .message__bubble :deep(hr) {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 0.75rem 0;
 }
 .message--user .message__bubble {
   background: var(--color-primary);

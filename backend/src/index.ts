@@ -10,8 +10,21 @@ import { startInactivityReaper, startPoolWarming } from './services/containerMan
 
 const app = express();
 
+const ALLOWED_ORIGINS = [
+  process.env.FRONTEND_URL || 'http://localhost:3000',
+  'http://localhost:3000',
+  'http://[::]:3000',
+  'http://[::1]:3000',
+  'http://127.0.0.1:3000',
+];
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (server-to-server, curl)
+    if (!origin) return callback(null, true);
+    if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS: origin not allowed — ${origin}`));
+  },
   credentials: true,
 }));
 app.use(express.json());
@@ -27,7 +40,7 @@ app.get('/health', (_req, res) => {
 });
 
 const PORT = parseInt(process.env.PORT || '3001');
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`[backend] Listening on port ${PORT} (agent sessions + chat proxy)`);
   startInactivityReaper();
   startPoolWarming();

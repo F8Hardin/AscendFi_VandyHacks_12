@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "AscendFi",
+    "slug": "ascendfi",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": ["**/*"],
+    "scheme": "ascendfi",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.ascendfi.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0f0f11"
+      },
+      "package": "com.ascendfi.app"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

@@ -144,3 +144,44 @@ jobs:
       - name: Verify build output exists
         run: |
           test -d frontend/.output && echo "✓ frontend/.output exists" || exit 1
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 4 — React Native / Expo mobile app
+  # Installs deps and runs expo-doctor + TypeScript check on a fresh Ubuntu VM.
+  # (A full native build requires macOS + Xcode/Android SDK; this validates
+  #  that all JS/TS code and dependencies are correct.)
+  # ─────────────────────────────────────────────────────────────────────────────
+  mobile:
+    name: Mobile App — Install & Type-check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        working-directory: mobile
+        run: npm install
+
+      - name: Create mobile .env for CI
+        working-directory: mobile
+        run: |
+          cat > .env << 'EOF'
+          EXPO_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
+          EXPO_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
+          EOF
+
+      - name: TypeScript type-check
+        working-directory: mobile
+        run: npx tsc --noEmit
+
+      - name: Verify Expo config is valid
+        working-directory: mobile
+        run: npx expo config --type introspect > /dev/null && echo "✓ Expo config valid"

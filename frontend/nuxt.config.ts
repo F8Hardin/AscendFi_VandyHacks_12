@@ -1,6 +1,7 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
+  devServer: { host: '127.0.0.1' },
   modules: ['@nuxtjs/tailwindcss'],
   components: [{ path: '~/components', pathPrefix: false }],
   css: ['~/assets/css/tokens.css', '~/assets/css/dashboard-pages.css'],
@@ -32,12 +33,12 @@ export default defineNuxtConfig({
      * Override with NUXT_PYTHON_AGENT_URL env var.
      * The Python FastAPI server is started via: cd Hackathon && uvicorn app.main:app --port 8000
      */
-    pythonAgentUrl: 'http://localhost:8000',
+    pythonAgentUrl: 'http://127.0.0.1:8000',
     public: {
       /** Python FastAPI base (also used by Node backend proxy). Override with NUXT_PUBLIC_API_BASE */
-      apiBase: 'http://localhost:8000/api',
+      apiBase: 'http://127.0.0.1:8000/api',
       /** Node session + chat proxy (backend). Override with NUXT_PUBLIC_AGENT_BASE */
-      agentBase: 'http://localhost:3001',
+      agentBase: 'http://127.0.0.1:3001',
       /**
        * Set to 'false' to use AI-powered data from the Python agent.
        * Set to 'true' to always show static demo data (no backend needed).

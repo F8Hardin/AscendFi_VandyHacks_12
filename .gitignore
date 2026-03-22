@@ -16,6 +16,12 @@ frontend/.nuxt/
 frontend/.output/
 frontend/dist/
 
+# Mobile (Expo / React Native)
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+mobile/.env
+
 # General
 .DS_Store
 *.pyc

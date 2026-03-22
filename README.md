@@ -15,6 +15,7 @@
 - [Quick Start (Recommended)](#quick-start-recommended)
 - [Manual Setup — macOS / Linux](#manual-setup--macos--linux)
 - [Manual Setup — Windows](#manual-setup--windows)
+- [Mobile App (iOS & Android)](#mobile-app-ios--android)
 - [Environment Variables](#environment-variables)
 - [Supabase Setup (Auth + Database)](#supabase-setup-auth--database)
 - [Running Without Supabase (Demo Mode)](#running-without-supabase-demo-mode)
@@ -299,6 +300,115 @@ npm run dev
 ```
 
 Open **http://localhost:3000**.
+
+---
+
+## Mobile App (iOS & Android)
+
+The `mobile/` directory is a full **React Native + Expo** app that mirrors all five dashboard tabs of the web app. You scan a QR code from your terminal with the **Expo Go** app on your phone — no Xcode or Android Studio required for testing.
+
+### What's included
+
+| Screen | Description |
+|--------|-------------|
+| **Login / Sign up** | Supabase auth + "Continue with demo data" shortcut |
+| **Dashboard** | AI risk chips, stat cards, spending pie chart, gains line chart, recent activity |
+| **Debt** | Debt paydown trajectory chart, avalanche list, extra-payment accelerator |
+| **Planner** | AI behavior profile, AI next steps, paycheck split pie, emergency fund tracker |
+| **Invest** | Live stock watchlist (stooq.com), interactive price history charts, symbol search |
+| **ARIA Chat** | Real-time streaming AI chat with the Python agent |
+
+### Prerequisites (mobile)
+
+| Tool | macOS | Windows |
+|------|-------|---------|
+| Node.js 20+ | `brew install node` | [nodejs.org](https://nodejs.org) |
+| Expo CLI | `npm install -g expo-cli` | `npm install -g expo-cli` |
+| **Expo Go app** | Install from App Store | Install from Google Play |
+
+> Your phone and computer must be on the **same WiFi network**.
+
+### Setup — macOS / Linux
+
+```bash
+cd mobile
+
+# Install dependencies
+npm install
+
+# Copy env file and add Supabase credentials
+cp .env.example .env
+# Edit .env — add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY
+
+# Start the Expo dev server
+npm start
+```
+
+A **QR code** appears in your terminal. Open **Expo Go** on your phone and scan it. The app loads instantly over your local network.
+
+### Setup — Windows
+
+```powershell
+cd mobile
+
+npm install
+
+copy .env.example .env
+# Edit .env in Notepad — add Supabase credentials
+
+npm start
+```
+
+A **QR code** appears in the terminal. Scan it with **Expo Go** on your phone.
+
+> **Windows tip:** If you see a network error on your phone, press `w` in the terminal to switch to tunnel mode, which works through Expo's servers and bypasses WiFi restrictions:
+> ```
+> Press w to open in tunnel mode
+> ```
+
+### How the QR code works
+
+When you run `npm start`, Expo:
+1. Detects your machine's local IP address (e.g., `192.168.1.42`)
+2. Encodes it into a QR code shown in the terminal
+3. The **Expo Go** app on your phone scans it, connects to your machine over WiFi, and loads the app
+
+The mobile app **automatically detects your machine's IP** — no manual configuration needed. All API calls (Python agent on port 8000) resolve to your dev machine's LAN address.
+
+### Running the backend for live AI on mobile
+
+The mobile app connects to the same Python agent as the web app. Start both before scanning:
+
+**macOS / Linux (one command):**
+```bash
+# From the repo root
+./start-dev.sh
+# Then in mobile/: npm start
+```
+
+**Windows (three separate PowerShell windows):**
+```powershell
+# Window 1 — Python agent
+cd Hackathon && venv\Scripts\Activate.ps1 && python -m uvicorn app.main:app --port 8000 --reload
+
+# Window 2 — Node backend
+cd backend && npm start
+
+# Window 3 — Mobile
+cd mobile && npm start
+```
+
+If the Python agent is offline, the app falls back to **demo data** automatically.
+
+### Simulator / Emulator (no phone needed)
+
+```bash
+# iOS Simulator (macOS only — requires Xcode)
+npm run ios
+
+# Android Emulator (requires Android Studio)
+npm run android
+```
 
 ---
 
