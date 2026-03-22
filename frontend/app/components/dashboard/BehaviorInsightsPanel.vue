@@ -28,7 +28,7 @@
           {{ behavior.trend.text }}
         </p>
         <div class="behavior__ai-card">
-          <p class="behavior__ai-label">What your AI sees</p>
+          <p class="behavior__ai-label">Summary</p>
           <p class="behavior__ai-text">{{ behavior.aiSummary }}</p>
         </div>
       </div>
@@ -36,8 +36,7 @@
 
     <!-- Pattern detection -->
     <div class="behavior__section">
-      <h3 class="behavior__h3">Behavior insights</h3>
-      <p class="behavior__lead">Patterns the model is tracking—will sync with your advisor agent.</p>
+      <h3 class="behavior__h3">Patterns</h3>
       <div class="behavior__grid-2">
         <div class="behavior__card">
           <div class="behavior__card-head">
@@ -77,38 +76,35 @@
           <div class="behavior__card-head">
             <span class="behavior__icon" aria-hidden="true">🧠</span>
             <div>
-              <h4 class="behavior__h4">Trigger detection</h4>
-              <p class="behavior__card-sub">Sequences that often precede overspending</p>
+              <h4 class="behavior__h4">Triggers</h4>
             </div>
           </div>
-          <ul class="behavior__bullets">
-            <li v-for="(t, i) in behavior.patterns.triggers" :key="i">{{ t }}</li>
+          <ul class="behavior__bullets behavior__bullets--tight">
+            <li v-for="(t, i) in triggersShown" :key="i">{{ t }}</li>
           </ul>
         </div>
         <div
-          v-for="(c, i) in behavior.patterns.categories"
+          v-for="(c, i) in categoriesShown"
           :key="'cat-' + i"
           class="behavior__card"
         >
           <div class="behavior__card-head">
             <span class="behavior__icon" aria-hidden="true">🛍️</span>
             <div>
-              <h4 class="behavior__h4">Category behavior</h4>
-              <p class="behavior__card-sub">{{ c.headline }}</p>
+              <h4 class="behavior__h4">{{ c.headline }}</h4>
             </div>
           </div>
-          <p class="behavior__p">{{ c.detail }}</p>
+          <p class="behavior__p behavior__p--compact">{{ c.detail }}</p>
         </div>
       </div>
     </div>
 
     <!-- Risks -->
     <div class="behavior__section">
-      <h3 class="behavior__h3 behavior__h3--risk">Risk behaviors</h3>
-      <p class="behavior__lead">Critical signals—weighted for urgency.</p>
+      <h3 class="behavior__h3 behavior__h3--risk">Risks</h3>
       <div class="behavior__risk-grid">
         <div
-          v-for="r in behavior.risks"
+          v-for="r in risksShown"
           :key="r.id"
           class="behavior__risk-card"
           :class="`behavior__risk-card--${r.level}`"
@@ -117,9 +113,9 @@
             <span class="behavior__risk-emoji" aria-hidden="true">{{ riskEmoji(r.level) }}</span>
             <div class="behavior__risk-meta">
               <span class="behavior__risk-badge" :class="`behavior__risk-badge--${r.level}`">
-                {{ r.level }} risk
+                {{ r.level }}
               </span>
-              <span class="behavior__risk-prob">{{ Math.round(r.probability * 100) }}% model weight</span>
+              <span class="behavior__risk-prob">{{ Math.round(r.probability * 100) }}%</span>
             </div>
           </div>
           <h4 class="behavior__risk-title">{{ r.title }}</h4>
@@ -130,11 +126,10 @@
 
     <!-- Forecast -->
     <div class="behavior__section">
-      <h3 class="behavior__h3">Predictive behavior</h3>
-      <p class="behavior__lead">Next 7 days—experimental forecast from recent habits.</p>
+      <h3 class="behavior__h3">Next 7 days</h3>
       <div class="behavior__forecast-grid">
         <div class="behavior__card behavior__forecast-stat">
-          <p class="behavior__forecast-label">Next 7-day spend (estimate)</p>
+          <p class="behavior__forecast-label">Est. spend</p>
           <p class="behavior__forecast-big">
             ${{ behavior.forecast.next7Spend.toLocaleString('en-US') }}
             <span
@@ -144,12 +139,12 @@
               (↑ {{ behavior.forecast.changePct }}%)
             </span>
           </p>
-          <ul class="behavior__alerts">
-            <li v-for="(a, i) in behavior.forecast.alerts" :key="i">{{ a }}</li>
+          <ul class="behavior__alerts behavior__alerts--tight">
+            <li v-for="(a, i) in alertsShown" :key="i">{{ a }}</li>
           </ul>
         </div>
         <div class="behavior__card behavior__chart-card">
-          <h4 class="behavior__h4">Spending projection</h4>
+          <h4 class="behavior__h4">Daily projection</h4>
           <ClientOnly>
             <div class="behavior__line-h">
               <LineChart
@@ -165,18 +160,17 @@
         </div>
       </div>
       <div class="behavior__ai-card behavior__ai-card--tint">
-        <p class="behavior__ai-label">Forecast note</p>
-        <p class="behavior__ai-text">{{ behavior.forecast.aiMessage }}</p>
+        <p class="behavior__ai-label">Note</p>
+        <p class="behavior__ai-text behavior__ai-text--compact">{{ behavior.forecast.aiMessage }}</p>
       </div>
     </div>
 
     <!-- Recommendations -->
     <div class="behavior__section">
-      <h3 class="behavior__h3">AI recommendations</h3>
-      <p class="behavior__lead">Specific moves—buttons will call your agent / rules engine.</p>
+      <h3 class="behavior__h3">Suggestions</h3>
       <div class="behavior__rec-grid">
-        <div v-for="rec in behavior.recommendations" :key="rec.id" class="behavior__rec-card">
-          <p class="behavior__rec-title">💡 {{ rec.title }}</p>
+        <div v-for="rec in recsShown" :key="rec.id" class="behavior__rec-card">
+          <p class="behavior__rec-title">{{ rec.title }}</p>
           <p class="behavior__rec-detail">{{ rec.detail }}</p>
           <button type="button" class="behavior__btn" @click="onAgentAction(rec.id, rec.actionLabel)">
             {{ rec.actionLabel }}
@@ -187,19 +181,18 @@
 
     <!-- Controls -->
     <div class="behavior__section">
-      <h3 class="behavior__h3">Behavior controls</h3>
-      <p class="behavior__lead">Local UI for now—persist via API when the agent is connected.</p>
+      <h3 class="behavior__h3">Controls</h3>
       <div class="behavior__controls">
         <label class="behavior__toggle">
           <input v-model="spendingGuard" type="checkbox" />
-          <span>Block purchases after 10PM (Spending Guard)</span>
+          <span>Block purchases after 10PM</span>
         </label>
         <label class="behavior__toggle">
           <input v-model="impulseDelay" type="checkbox" />
-          <span>Delay new card charges by 5 minutes (Impulse delay)</span>
+          <span>5-minute delay on new charges</span>
         </label>
         <div class="behavior__limits">
-          <p class="behavior__limits-title">Category limits (monthly max)</p>
+          <p class="behavior__limits-title">Monthly caps</p>
           <div v-for="lim in categoryLimits" :key="lim.category" class="behavior__limit-row">
             <span class="behavior__limit-name">{{ lim.category }}</span>
             <div class="behavior__limit-input-wrap">
@@ -209,7 +202,7 @@
           </div>
         </div>
         <label class="behavior__alert-row">
-          <span>Smart alert if daily spend exceeds</span>
+          <span>Alert if daily spend over</span>
           <div class="behavior__limit-input-wrap behavior__limit-input-wrap--sm">
             <span class="behavior__limit-prefix">$</span>
             <input v-model.number="dailyAlertThreshold" class="behavior__limit-input" type="number" min="0" step="5" />
@@ -220,10 +213,10 @@
 
     <!-- Trends -->
     <div class="behavior__section">
-      <h3 class="behavior__h3">Behavior trends</h3>
-      <p class="behavior__lead">{{ behavior.trends.disciplineNote }}</p>
+      <h3 class="behavior__h3">Score trend</h3>
+      <p class="behavior__lead behavior__lead--inline">{{ behavior.trends.disciplineNote }}</p>
       <div class="behavior__card behavior__chart-card">
-        <h4 class="behavior__h4">Weekly behavior score</h4>
+        <h4 class="behavior__h4">Weekly score</h4>
         <ClientOnly>
           <div class="behavior__line-h behavior__line-h--tall">
             <LineChart
@@ -242,18 +235,16 @@
 
     <!-- Goals -->
     <div class="behavior__section">
-      <h3 class="behavior__h3">Goals &amp; alignment</h3>
-      <p class="behavior__lead">How today’s habits line up with what you said matters.</p>
+      <h3 class="behavior__h3">Goals</h3>
       <ul class="behavior__goal-list">
         <li v-for="(g, i) in behavior.goals.items" :key="i" class="behavior__goal-row">
           <span class="behavior__goal-icon" :class="g.aligned ? 'behavior__goal-icon--ok' : 'behavior__goal-icon--bad'">
-            {{ g.aligned ? '✅' : '❌' }}
+            {{ g.aligned ? '✓' : '✕' }}
           </span>
-          <span
-            >Your current behavior is
-            <strong>{{ g.aligned ? 'aligned' : 'misaligned' }}</strong>
-            with <strong>{{ g.name }}</strong></span
-          >
+          <span>
+            <strong>{{ g.name }}</strong>
+            — {{ g.aligned ? 'on track' : 'needs attention' }}
+          </span>
         </li>
       </ul>
       <div class="behavior__progress-block">
@@ -283,14 +274,12 @@
 
     <!-- Profile -->
     <div class="behavior__section behavior__section--last">
-      <h3 class="behavior__h3">Behavioral profile</h3>
-      <p class="behavior__lead">A memorable identity so the agent can speak in your language.</p>
+      <h3 class="behavior__h3">Your profile</h3>
       <div class="behavior__profile">
         <div class="behavior__profile-avatar" aria-hidden="true">{{ behavior.profile.emoji }}</div>
         <div class="behavior__profile-body">
-          <p class="behavior__profile-id">{{ behavior.profile.archetypeId.replace(/_/g, ' ') }}</p>
           <h4 class="behavior__profile-title">{{ behavior.profile.title }}</h4>
-          <p class="behavior__p">{{ behavior.profile.description }}</p>
+          <p class="behavior__p behavior__p--compact">{{ behavior.profile.description }}</p>
           <div class="behavior__profile-cols">
             <div>
               <p class="behavior__mini-h">Strengths</p>
@@ -330,6 +319,19 @@ const props = defineProps<{
 const emit = defineEmits<{
   'agent-action': [payload: { actionId: string; actionLabel: string }]
 }>()
+
+/** Cap list length so long API payloads don’t overwhelm the UI */
+const MAX_TRIGGERS = 2
+const MAX_CATEGORIES = 2
+const MAX_RISKS = 2
+const MAX_ALERTS = 1
+const MAX_RECS = 3
+
+const triggersShown = computed(() => props.behavior.patterns.triggers.slice(0, MAX_TRIGGERS))
+const categoriesShown = computed(() => props.behavior.patterns.categories.slice(0, MAX_CATEGORIES))
+const risksShown = computed(() => props.behavior.risks.slice(0, MAX_RISKS))
+const alertsShown = computed(() => props.behavior.forecast.alerts.slice(0, MAX_ALERTS))
+const recsShown = computed(() => props.behavior.recommendations.slice(0, MAX_RECS))
 
 const maxHour = computed(() =>
   Math.max(...props.behavior.patterns.timeOfDay.byHour.map((h) => h.amount), 1),
@@ -405,7 +407,7 @@ function onAgentAction(actionId: string, actionLabel: string) {
 .behavior {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.35rem;
 }
 
 .behavior__snapshot {
@@ -545,9 +547,14 @@ function onAgentAction(actionId: string, actionLabel: string) {
 
 .behavior__ai-text {
   margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.65;
+  font-size: 0.875rem;
+  line-height: 1.5;
   color: var(--color-text);
+}
+.behavior__ai-text--compact {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--color-text-muted);
 }
 
 .behavior__section {
@@ -578,6 +585,10 @@ function onAgentAction(actionId: string, actionLabel: string) {
   line-height: 1.5;
   max-width: 44rem;
 }
+.behavior__lead--inline {
+  font-size: 0.78rem;
+  margin-bottom: 0.35rem;
+}
 
 .behavior__grid-2 {
   display: grid;
@@ -607,7 +618,7 @@ function onAgentAction(actionId: string, actionLabel: string) {
 .behavior__card-head {
   display: flex;
   gap: 0.65rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .behavior__icon {
@@ -635,14 +646,18 @@ function onAgentAction(actionId: string, actionLabel: string) {
   line-height: 1.55;
   color: var(--color-text-muted);
 }
+.behavior__p--compact {
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
 
 .behavior__bars {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 0.35rem;
-  height: 140px;
-  padding-top: 0.5rem;
+  height: 120px;
+  padding-top: 0.35rem;
 }
 
 .behavior__bar-col {
@@ -657,7 +672,7 @@ function onAgentAction(actionId: string, actionLabel: string) {
 .behavior__bar-track {
   width: 100%;
   max-width: 2.25rem;
-  height: 110px;
+  height: 92px;
   background: var(--color-surface-raised);
   border-radius: 9999px;
   display: flex;
@@ -689,6 +704,13 @@ function onAgentAction(actionId: string, actionLabel: string) {
 }
 .behavior__bullets li {
   margin-bottom: 0.4rem;
+}
+.behavior__bullets--tight li {
+  margin-bottom: 0.25rem;
+}
+.behavior__bullets--tight {
+  font-size: 0.8rem;
+  line-height: 1.45;
 }
 
 .behavior__risk-grid {
@@ -771,8 +793,8 @@ function onAgentAction(actionId: string, actionLabel: string) {
 
 .behavior__risk-body {
   margin: 0;
-  font-size: 0.8rem;
-  line-height: 1.5;
+  font-size: 0.78rem;
+  line-height: 1.4;
   color: var(--color-text-muted);
 }
 
@@ -820,17 +842,21 @@ function onAgentAction(actionId: string, actionLabel: string) {
   line-height: 1.55;
   color: var(--color-text-muted);
 }
+.behavior__alerts--tight {
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
 
 .behavior__chart-card .behavior__h4 {
   margin-bottom: 0.5rem;
 }
 
 .behavior__line-h {
-  height: 220px;
+  height: 180px;
   margin-top: 0.35rem;
 }
 .behavior__line-h--tall {
-  height: 260px;
+  height: 220px;
 }
 
 .behavior__rec-grid {
@@ -840,13 +866,13 @@ function onAgentAction(actionId: string, actionLabel: string) {
 }
 
 .behavior__rec-card {
-  padding: 1.1rem;
+  padding: 0.9rem 1rem;
   border-radius: 0.95rem;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 0.4rem;
   box-shadow: var(--shadow-card);
 }
 
@@ -861,8 +887,8 @@ function onAgentAction(actionId: string, actionLabel: string) {
 .behavior__rec-detail {
   margin: 0;
   flex: 1;
-  font-size: 0.8rem;
-  line-height: 1.5;
+  font-size: 0.76rem;
+  line-height: 1.4;
   color: var(--color-text-muted);
 }
 
