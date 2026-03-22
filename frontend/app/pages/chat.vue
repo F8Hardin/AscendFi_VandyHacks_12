@@ -72,8 +72,18 @@
 <script setup lang="ts">
 import { marked } from 'marked'
 
+function preprocessMarkdown(text: string): string {
+  return text
+    // Replace pipe line-separators used by the AI
+    .replace(/\|/g, '\n')
+    // Convert markdown headings directly to HTML (handles ### or ###Title, 1-6 hashes)
+    .replace(/^(#{1,6}) *(.+)/gm, (_, hashes, content) => `<h${hashes.length}>${content.trim()}</h${hashes.length}>`)
+    // Replace * bullet lines with a • dot character
+    .replace(/^\*[ \t]+(.+)/gm, '• $1')
+}
+
 function renderMarkdown(text: string): string {
-  return marked.parse(text, { async: false }) as string
+  return marked.parse(preprocessMarkdown(text), { async: false, breaks: true, gfm: true }) as string
 }
 
 definePageMeta({

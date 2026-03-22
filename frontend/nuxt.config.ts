@@ -10,6 +10,8 @@ export default defineNuxtConfig({
     '/dashboard': { ssr: false },
     '/dashboard/**': { ssr: false },
     '/invest': { ssr: false },
+    // Proxy Node backend through Nuxt so cookies are same-origin (avoids SameSite cross-site rejection)
+    '/node/**': { proxy: 'http://127.0.0.1:3001/**' },
   },
   build: {
     transpile: ['chart.js', 'vue-chartjs'],
@@ -38,7 +40,7 @@ export default defineNuxtConfig({
       /** Python FastAPI base (also used by Node backend proxy). Override with NUXT_PUBLIC_API_BASE */
       apiBase: 'http://127.0.0.1:8000/api',
       /** Node session + chat proxy (backend). Override with NUXT_PUBLIC_AGENT_BASE */
-      agentBase: 'http://127.0.0.1:3001',
+      agentBase: '/node',
       /**
        * Set to 'false' to use AI-powered data from the Python agent.
        * Set to 'true' to always show static demo data (no backend needed).

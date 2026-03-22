@@ -41,10 +41,10 @@
             :key="i"
             :class="['wm', msg.role === 'user' ? 'wm--user' : 'wm--ai']"
           >
-            <div class="wm__bubble">{{ msg.content }}</div>
+            <div class="wm__bubble" v-html="msg.role === 'user' ? msg.content : renderMarkdown(msg.content)" />
           </div>
           <div v-if="streaming" class="wm wm--ai">
-            <div class="wm__bubble">{{ streamBuffer }}<span class="cursor">▌</span></div>
+            <div class="wm__bubble" v-html="renderMarkdown(streamBuffer) + '<span class=\'cursor\'>▌</span>'" />
           </div>
         </div>
 
@@ -72,6 +72,22 @@
 </template>
 
 <script setup lang="ts">
+import { marked } from 'marked'
+
+function preprocessMarkdown(text: string): string {
+  return text
+    // Replace pipe line-separators used by the AI
+    .replace(/\|/g, '\n')
+    // Convert markdown headings directly to HTML (handles ### or ###Title, 1-6 hashes)
+    .replace(/^(#{1,6}) *(.+)/gm, (_, hashes, content) => `<h${hashes.length}>${content.trim()}</h${hashes.length}>`)
+    // Replace * bullet lines with a • dot character
+    .replace(/^\*[ \t]+(.+)/gm, '• $1')
+}
+
+function renderMarkdown(text: string): string {
+  return marked.parse(preprocessMarkdown(text), { async: false, breaks: true, gfm: true }) as string
+}
+
 const config = useRuntimeConfig()
 const { buildContext } = useChatFinancialContext()
 const {
@@ -441,17 +457,44 @@ function scrollToBottom() {
   border-radius: 1rem;
   font-size: 0.8125rem;
   line-height: 1.55;
-  white-space: pre-wrap;
 }
 .wm--user .wm__bubble {
   background: var(--color-primary-dim);
   color: #fff;
   border-bottom-right-radius: 0.25rem;
+  white-space: pre-wrap;
 }
 .wm--ai .wm__bubble {
   background: var(--color-surface-raised);
   color: var(--color-text);
   border-bottom-left-radius: 0.25rem;
+}
+.wm--ai .wm__bubble :deep(p) { margin: 0.35rem 0; }
+.wm--ai .wm__bubble :deep(p:first-child) { margin-top: 0; }
+.wm--ai .wm__bubble :deep(p:last-child) { margin-bottom: 0; }
+.wm--ai .wm__bubble :deep(h1),
+.wm--ai .wm__bubble :deep(h2),
+.wm--ai .wm__bubble :deep(h3) { font-weight: 700; margin: 0.6rem 0 0.2rem; line-height: 1.3; }
+.wm--ai .wm__bubble :deep(h1) { font-size: 0.95rem; }
+.wm--ai .wm__bubble :deep(h2) { font-size: 0.875rem; }
+.wm--ai .wm__bubble :deep(h3) { font-size: 0.825rem; }
+.wm--ai .wm__bubble :deep(ul),
+.wm--ai .wm__bubble :deep(ol) { margin: 0.35rem 0; padding-left: 1.1rem; }
+.wm--ai .wm__bubble :deep(li) { margin: 0.15rem 0; }
+.wm--ai .wm__bubble :deep(strong) { font-weight: 600; }
+.wm--ai .wm__bubble :deep(em) { font-style: italic; }
+.wm--ai .wm__bubble :deep(code) {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.25rem;
+  font-size: 0.75rem;
+  font-family: monospace;
+}
+.wm--ai .wm__bubble :deep(hr) {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 0.6rem 0;
 }
 .cursor { animation: blink 0.8s infinite; }
 @keyframes blink { 0%,100% { opacity: 1 } 50% { opacity: 0 } }

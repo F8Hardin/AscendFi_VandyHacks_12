@@ -31,12 +31,13 @@ echo "════════════════════════�
 echo ""
 echo "▶ [1/3] Setting up Python agent..."
 
-PYTHON="python3"
-PIP="pip3"
-if [ -f "$HACKATHON_DIR/venv/bin/python" ]; then
-  PYTHON="$HACKATHON_DIR/venv/bin/python"
-  PIP="$HACKATHON_DIR/venv/bin/pip"
+if [ ! -f "$HACKATHON_DIR/venv/bin/python" ]; then
+  echo "  Creating Python virtual environment..."
+  python3 -m venv "$HACKATHON_DIR/venv"
 fi
+
+PYTHON="$HACKATHON_DIR/venv/bin/python"
+PIP="$HACKATHON_DIR/venv/bin/pip"
 
 echo "  Installing Python dependencies..."
 "$PIP" install -r "$HACKATHON_DIR/requirements.txt" -q
