@@ -24,14 +24,63 @@ AscendFi is a full-stack web application built for VandyHacks 12. A **Nuxt 4** f
 
 ## How services connect
 
-| From | To | Purpose |
-|------|-----|--------|
-| **Browser** (`localhost:3000`) | **Nuxt** | UI; auth + DB via **Node backend** cookies; Turnstile → Nuxt `/api/turnstile` |
-| **Browser** | **Node `backend`** (`NUXT_PUBLIC_AGENT_BASE`, default `:3001`) | `POST /agent/session`, `POST /agent/chat/:id` (SSE) |
-| **Node `backend`** | **Docker agent** (`backend_agent/container`) | Starts one container per session; proxies `/chat/stream` to dynamic `localhost:8100–8200` |
-| **Agent container** | **LM Studio** (host) | `LM_STUDIO_*` env from `backend/.env` at container create time |
-| **Agent container** | **FastAPI** (optional, `:8000`) | `BACKEND_URL` / `AGENT_BACKEND_URL` for future tool calls |
-| **Browser / future composables** | **FastAPI** (`NUXT_PUBLIC_API_BASE`, default `…/api`) | REST + `/api/health`; Swagger at `/docs` |
+There are two runtime modes controlled by `DIRECT_AGENT_MODE` in `backend/.env`.
+
+### Dev mode (`DIRECT_AGENT_MODE=1`) — no Docker required
+
+```
+Browser (port 3000)
+    │
+    │  page load / auth
+    ▼
+Nuxt frontend ──────────────────────────────────────── Supabase (auth + DB)
+    │
+    │  POST /agent/session
+    │  POST /agent/chat/:id  (SSE)
+    ▼
+Node backend (port 3001)
+    │  validates session, proxies SSE
+    │
+    │  POST /chat/stream  (SSE)
+    ▼
+Python Uvicorn agent (port 8080)          ← backend_agent/api/
+    │  spawned by Node on startup via
+    │  DIRECT_AGENT_PATH; all sessions
+    │  share this single process
+    │
+    │  POST /v1/chat/completions  (SSE)
+    ▼
+LM Studio (port 1234)
+    model: qwen/qwen3.5-9b
+```
+
+### Server mode (`DIRECT_AGENT_MODE=0`) — one Docker container per session
+
+```
+Browser (port 3000)
+    │
+    ▼
+Nuxt frontend ──────────────────────────────────────── Supabase (auth + DB)
+    │
+    │  POST /agent/session
+    │  POST /agent/chat/:id  (SSE)
+    ▼
+Node backend (port 3001)
+    │  validates session, proxies SSE
+    │  spins up / tears down containers
+    │  via Docker / distrobox
+    │
+    │  POST /chat/stream  (SSE)
+    ▼
+Docker agent container (ports 8100–8200)  ← backend_agent/container/
+    │  one container per user session
+    │  (pool pre-warms up to POOL_DEFAULT_SIZE)
+    │
+    │  POST /v1/chat/completions  (SSE)
+    ▼
+LM Studio (host.docker.internal:1234)
+    model: set via LM_STUDIO_MODEL env
+```
 
 Chat requests include **financial `context`** when the user is logged in and dashboard data exists (dummy or future Supabase), matching `ChatRequest` in the Python agent.
 
@@ -165,61 +214,84 @@ When those routes exist, interactive docs will be at `http://localhost:8000/docs
 ## Getting Started
 
 ### Prerequisites
-- Python 3.11+ (agent container + optional FastAPI)
+- Python 3.11+
 - Node 20+
-- Docker (for per-session agent containers)
-- LM Studio (optional, for local AI)
+- LM Studio with a model loaded (dev mode)
+- Docker / distrobox (server mode only)
 
-### 1. Backend (Node.js) — port `3001`
+---
 
+### Dev mode — no Docker
+
+> Uses `DIRECT_AGENT_MODE=1`. Node spawns a single shared Uvicorn process. Fastest for local development.
+
+**1. LM Studio** — open LM Studio, load a model (e.g. `qwen/qwen3.5-9b`), and start the local server on port 1234.
+
+**2. Python agent** — install deps once:
+```bash
+cd backend_agent/api
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+Create `backend_agent/api/.env` (gitignored):
+```env
+LM_STUDIO_BASE_URL=http://localhost:1234/v1
+LM_STUDIO_MODEL=qwen/qwen3.5-9b
+```
+
+**3. Node backend** — port `3001`:
 ```bash
 cd backend
-cp .env.example .env
+cp .env.example .env   # then set DIRECT_AGENT_MODE=1, DIRECT_AGENT_PATH=../backend_agent/api
 npm install
 npm run dev
 ```
+Node auto-starts the Uvicorn agent on startup. If you change agent code, kill port 8080 and restart Node.
 
-Build the agent image first (step 3) or set `AGENT_IMAGE` to your tag.
-
-### 2. Backend agent — FastAPI (optional) — port `8000`
-
-```bash
-cd backend_agent/api
-python3 -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
-```
-
-### 3. Backend agent — Docker image
-
-```bash
-cd backend_agent/container
-docker build -t ascendfi-backend-agent:latest .
-```
-
-Match the tag to `AGENT_IMAGE` in `backend/.env`.
-
-### Frontend
-
+**4. Frontend** — port `3000`:
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`
+Open `http://localhost:3000`.
+
+---
+
+### Server mode — Docker per session
+
+> Uses `DIRECT_AGENT_MODE=0` (or unset). Node spins up one Docker container per user session (pool pre-warms containers).
+
+**1.** Build the agent image:
+```bash
+cd backend_agent/container
+docker build -t ascendfi-agent:latest .
+```
+
+**2.** In `backend/.env` set:
+```env
+DIRECT_AGENT_MODE=0
+AGENT_IMAGE=ascendfi-agent:latest
+LM_STUDIO_BASE_URL=http://host.docker.internal:1234/v1
+LM_STUDIO_MODEL=qwen/qwen3.5-9b
+```
+
+**3.** Start Node backend and frontend as above. Docker containers are managed automatically.
+
+---
 
 ### Data toggle
 
-```bash
+```env
 # frontend/.env
-NUXT_PUBLIC_USE_DUMMY_DATA=true   # demo dashboard data (no DB reads)
-NUXT_PUBLIC_USE_DUMMY_DATA=false  # live dashboard from GET /api/finance/dashboard (needs Supabase + schema)
-NUXT_PUBLIC_AGENT_BASE=http://localhost:3001   # same origin as Node backend (auth cookies)
+NUXT_PUBLIC_USE_DUMMY_DATA=true   # demo dashboard (no DB reads)
+NUXT_PUBLIC_USE_DUMMY_DATA=false  # live data from Supabase
+NUXT_PUBLIC_AGENT_BASE=http://localhost:3001
 ```
 
-**Supabase:** add `SUPABASE_URL` and `SUPABASE_ANON_KEY` to **`backend/.env`** (not the Nuxt app). In the Supabase dashboard, set **Site URL** to `http://localhost:3000` and add **Redirect URL** `http://localhost:3000/confirm` for email confirmation.
+**Supabase:** add `SUPABASE_URL` and `SUPABASE_ANON_KEY` to **`backend/.env`**. In the Supabase dashboard set **Site URL** to `http://localhost:3000` and **Redirect URL** to `http://localhost:3000/confirm`.
 
 ---
 
