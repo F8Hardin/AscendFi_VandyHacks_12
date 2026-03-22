@@ -1,5 +1,7 @@
 # AscendFi — VandyHacks 12
 
+[![AscendFi CI](https://github.com/F8Hardin/AscendFi_VandyHacks_12/actions/workflows/ci.yml/badge.svg)](https://github.com/F8Hardin/AscendFi_VandyHacks_12/actions/workflows/ci.yml)
+
 > AI-powered personal finance platform that predicts risk, eliminates debt, tracks spending behavior, and builds autonomous finance plans — powered by a multi-agent Python system and a real-time Nuxt frontend.
 
 ---
@@ -19,6 +21,7 @@
 - [API Keys](#api-keys)
 - [Dashboard Pages](#dashboard-pages)
 - [How the Services Connect](#how-the-services-connect)
+- [CI / GitHub Actions](#ci--github-actions)
 - [Troubleshooting](#troubleshooting)
 - [Team](#team)
 
@@ -412,6 +415,43 @@ Browser (localhost:3000)
 ```
 
 All three services must be running for the full experience. You can run just the frontend in demo mode (`NUXT_PUBLIC_USE_DUMMY_DATA=true`) without Node or Python.
+
+---
+
+## CI / GitHub Actions
+
+Every push and pull request to `master` automatically runs three parallel jobs on **fresh Ubuntu virtual machines** — so dependencies are always installed in a clean, conflict-free environment identical to what a new contributor would experience.
+
+### What runs
+
+| Job | VM | What it does |
+|-----|----|-------------|
+| **Python Agent — Install & Verify** | `ubuntu-latest` | Installs all `Hackathon/requirements.txt` packages (including `catboost`, `xgboost`, `fastapi`, etc.), then imports the FastAPI app and verifies all required routes are registered |
+| **Node.js Backend — Install & Build** | `ubuntu-latest` | Runs `npm ci` + `npm run build` (TypeScript → `dist/`), verifies `dist/index.js` exists |
+| **Nuxt Frontend — Install & Build** | `ubuntu-latest` | Runs `npm ci` + `npm run build` (Nuxt production build), verifies `.output/` exists |
+
+### Workflow file
+
+Located at `.github/workflows/ci.yml`. Each job:
+
+- Spins up a **brand-new Ubuntu VM** — no state carries over between runs
+- Uses **pip/npm caching** to keep re-runs fast
+- Fails loudly if any install or build step breaks
+
+### GitHub Secrets (optional)
+
+The CI workflow can inject real API keys if you add them as GitHub repository secrets. Go to **Settings → Secrets and variables → Actions** and add:
+
+| Secret name | Value |
+|-------------|-------|
+| `ANTHROPIC_API_KEY` | Your Anthropic API key |
+| `OPENAI_API_KEY` | Your OpenAI API key |
+
+If the secrets are not set, the Python import check still runs with placeholder values — all module imports are verified, but no live API calls are made.
+
+### Viewing results
+
+Go to the **Actions** tab on GitHub to see live logs for every job. The badge at the top of this README shows the current build status.
 
 ---
 
