@@ -6,7 +6,7 @@ import sessionRouter from './routes/session';
 import chatRouter from './routes/chat';
 import authRouter from './routes/auth';
 import financeRouter from './routes/finance';
-import { startInactivityReaper } from './services/containerManager';
+import { startInactivityReaper, startPoolWarming } from './services/containerManager';
 
 const app = express();
 
@@ -30,4 +30,5 @@ const PORT = parseInt(process.env.PORT || '3001');
 app.listen(PORT, () => {
   console.log(`[backend] Listening on port ${PORT} (agent sessions + chat proxy)`);
   startInactivityReaper();
+  startPoolWarming();
 });

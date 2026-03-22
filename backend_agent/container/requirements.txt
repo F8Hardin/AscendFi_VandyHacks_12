@@ -1,7 +1,7 @@
 fastapi
 uvicorn[standard]
-langchain
-langchain-openai
-langchain-core
+langchain>=0.3.0,<0.4
+langchain-openai>=0.2.0,<0.3
+langchain-core>=0.3.0,<0.4
 python-dotenv
 pydantic
