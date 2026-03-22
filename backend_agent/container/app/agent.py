@@ -8,7 +8,7 @@ from typing import Optional
 
 from langchain_openai import ChatOpenAI
 from langchain.agents import AgentExecutor, create_react_agent
-from langchain import hub
+from langchain import hub  # type: ignore[import-untyped]
 from langchain_core.prompts import PromptTemplate
 
 from app.models import FinancialContext
