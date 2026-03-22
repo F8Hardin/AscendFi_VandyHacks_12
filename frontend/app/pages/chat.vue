@@ -37,7 +37,7 @@
       <!-- Error overlay -->
       <div v-if="connectionError" class="status-overlay status-overlay--error">
         <span class="status-overlay__icon">⚠</span>
-        <span>Agent container is not reachable. Make sure the agent service is running in Docker and try refreshing.</span>
+        <span>Agent is not reachable. Run the Node backend (port 3001), build the Docker image from <code>backend_agent/container</code>, and try again.</span>
       </div>
 
       <!-- Connecting overlay -->
@@ -74,6 +74,7 @@ definePageMeta({
 })
 
 const config = useRuntimeConfig()
+const { buildContext } = useChatFinancialContext()
 
 interface Message { role: 'user' | 'assistant'; content: string }
 
@@ -126,7 +127,10 @@ async function send() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ messages: messages.value }),
+        body: JSON.stringify({
+          messages: messages.value,
+          context: buildContext(),
+        }),
       }
     )
 

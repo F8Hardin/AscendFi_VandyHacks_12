@@ -1,5 +1,5 @@
 <template>
-  <div class="stat-card">
+  <div class="stat-card" :class="{ 'stat-card--dash': variant === 'dash' }">
     <div class="stat-card__icon" :style="{ background: iconBg }">
       <slot name="icon" />
     </div>
@@ -12,14 +12,19 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
-  label: string
-  value: string
-  sub?: string
-  subClass?: string
-  iconBg?: string
-  valueColor?: string
-}>()
+withDefaults(
+  defineProps<{
+    label: string
+    value: string
+    sub?: string
+    subClass?: string
+    iconBg?: string
+    valueColor?: string
+    /** Compact metrics row on dashboard tabs */
+    variant?: 'default' | 'dash'
+  }>(),
+  { variant: 'default' },
+)
 </script>
 
 <style scoped>
@@ -36,6 +41,18 @@ defineProps<{
 }
 .stat-card:hover {
   box-shadow: var(--shadow-card-hover);
+}
+.stat-card--dash {
+  border-radius: 1rem;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 1px 2px rgba(0, 0, 0, 0.04);
+  background: linear-gradient(165deg, var(--color-surface) 0%, var(--color-surface-raised) 100%);
+}
+.stat-card--dash:hover {
+  transform: translateY(-1px);
+}
+.stat-card--dash .stat-card__icon {
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-border);
 }
 .stat-card__icon {
   width: 2.75rem;

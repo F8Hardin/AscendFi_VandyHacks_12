@@ -1,9 +1,7 @@
 <template>
   <div class="page">
-    <h1 class="page__title">{{ isSignUp ? 'Create account' : 'Sign in' }}</h1>
-    <p class="page__lead">
-      {{ isSignUp ? 'Create an account to get started.' : 'Sign in to open the dashboard and AI advisor.' }}
-    </p>
+    <h1 class="page__title">Sign in</h1>
+    <p class="page__lead">Sign in to open the dashboard and AI advisor.</p>
 
     <form class="page__form" @submit.prevent="onSubmit">
       <label class="page__field">
@@ -22,20 +20,18 @@
         />
       </label>
       <p v-if="error" class="page__error">{{ error }}</p>
-      <p v-if="successMsg" class="page__success">{{ successMsg }}</p>
       <button type="submit" class="page__cta" :disabled="loading">
-        {{ loading ? 'Loading…' : isSignUp ? 'Create account' : 'Sign in' }}
+        {{ loading ? 'Loading…' : 'Sign in' }}
       </button>
     </form>
 
     <p class="page__hint">
-      <button type="button" class="page__toggle" @click="isSignUp = !isSignUp">
-        {{ isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up" }}
-      </button>
+      Don't have an account?
+      <NuxtLink :to="getStartedLink" class="page__link">Get started</NuxtLink>
     </p>
 
-    <p class="page__hint">
-      <NuxtLink to="/" class="page__link">← Back to home</NuxtLink>
+    <p class="page__hint page__hint--sub">
+      <NuxtLink to="/" class="page__link page__link--muted">← Back to home</NuxtLink>
     </p>
   </div>
 </template>
@@ -47,12 +43,18 @@ definePageMeta({
 })
 
 const route = useRoute()
-const { signIn, signUp, loading, error } = useAuth()
+const { signIn, loading, error } = useAuth()
 
 const email = ref('')
 const password = ref('')
-const isSignUp = ref(false)
-const successMsg = ref('')
+
+const getStartedLink = computed(() => {
+  const r = route.query.redirect
+  if (typeof r === 'string' && r.startsWith('/') && !r.startsWith('//')) {
+    return { path: '/get-started', query: { redirect: r } }
+  }
+  return '/get-started'
+})
 
 useHead({
   title: 'Log in — AI Financial',
@@ -66,14 +68,8 @@ function safeRedirectPath(): string {
 }
 
 async function onSubmit() {
-  successMsg.value = ''
-  if (isSignUp.value) {
-    const ok = await signUp(email.value, password.value)
-    if (ok) successMsg.value = 'Check your email to confirm your account.'
-  } else {
-    const ok = await signIn(email.value, password.value)
-    if (ok) await navigateTo(safeRedirectPath())
-  }
+  const ok = await signIn(email.value, password.value)
+  if (ok) await navigateTo(safeRedirectPath())
 }
 </script>
 
@@ -138,22 +134,6 @@ async function onSubmit() {
   font-size: 0.8rem;
   color: var(--color-danger);
 }
-.page__success {
-  margin: 0;
-  font-size: 0.8rem;
-  color: var(--color-success);
-}
-.page__toggle {
-  background: none;
-  border: none;
-  font-size: 0.875rem;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  padding: 0;
-}
-.page__toggle:hover {
-  color: var(--color-primary);
-}
 .page__cta {
   display: inline-flex;
   width: 100%;
@@ -180,12 +160,21 @@ async function onSubmit() {
   margin: 1.5rem 0 0;
   font-size: 0.875rem;
   text-align: center;
+  color: var(--color-text-muted);
+}
+.page__hint--sub {
+  margin-top: 0.75rem;
 }
 .page__link {
   color: var(--color-primary);
   text-decoration: none;
+  font-weight: 600;
 }
 .page__link:hover {
   text-decoration: underline;
+}
+.page__link--muted {
+  font-weight: 500;
+  color: var(--color-text-muted);
 }
 </style>

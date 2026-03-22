@@ -11,7 +11,12 @@
       wire them in. Same APIs power the dashboard visuals and the conversational advisor.
     </p>
     <div class="page__actions">
-      <NuxtLink to="/dashboard" class="page__cta page__cta--primary">Get started</NuxtLink>
+      <NuxtLink
+        :to="{ path: '/get-started', query: { redirect: '/dashboard' } }"
+        class="page__cta page__cta--primary"
+      >
+        Get started
+      </NuxtLink>
       <NuxtLink to="/login" class="page__cta page__cta--ghost">Log in</NuxtLink>
     </div>
   </div>

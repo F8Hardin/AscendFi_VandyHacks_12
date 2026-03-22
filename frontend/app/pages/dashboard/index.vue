@@ -1,185 +1,160 @@
 <template>
-  <div class="dashboard">
-    <!-- Header -->
-    <div class="dashboard__header">
-      <div>
-        <h1 class="dashboard__title">Good morning<template v-if="displayName">, {{ displayName }}</template> 👋</h1>
-        <p class="dashboard__date">
-          <span v-if="today">{{ today }} · </span>Financial Recovery Dashboard
-        </p>
-      </div>
-    </div>
+  <div class="dash-page dash-page--cash">
+    <header class="dash-hero">
+      <p class="dash-hero__eyebrow">
+        <span class="dash-hero__eyebrow-dot" aria-hidden="true" />
+        Checking &amp; spending
+      </p>
+      <h1 class="dash-hero__title">
+        Good morning<template v-if="displayName">, {{ displayName }}</template>
+      </h1>
+      <p class="dash-hero__sub">
+        <span v-if="today">{{ today }} · </span>
+        Checking, spending mix, and recent moves—built to surface patterns before they become problems.
+      </p>
+    </header>
+
+    <p v-if="!data && isLoading" class="dash-page__hint">Loading your dashboard…</p>
+    <p v-else-if="!data && !isUsingDummyData" class="dash-page__hint">
+      No data loaded. Check that the Node backend has <code>SUPABASE_URL</code> / <code>SUPABASE_ANON_KEY</code> and your Supabase tables exist.
+    </p>
 
     <template v-if="data">
-      <!-- ── KPI Row ──────────────────────────────────────────────── -->
-      <section class="grid-4 mb-section">
-        <StatCard
-          label="Monthly Income"
-          :value="`$${data.user.monthlyIncome.toLocaleString('en-US')}`"
-          sub="Bi-weekly deposits"
-          icon-bg="var(--color-info-dim)"
-          value-color="var(--color-info)"
-        >
-          <template #icon><span style="font-size:1.1rem">💵</span></template>
-        </StatCard>
-
-        <StatCard
-          label="Checking Balance"
-          :value="`$${data.accounts.checking.toLocaleString('en-US', { minimumFractionDigits: 2 })}`"
-          sub="⚠ Low — bills incoming"
-          sub-class="text-warning"
-          icon-bg="var(--color-warning-dim)"
-          value-color="var(--color-warning)"
-        >
-          <template #icon><span style="font-size:1.1rem">🏦</span></template>
-        </StatCard>
-
-        <StatCard
-          label="Total Debt"
-          :value="`$${totalDebt.toLocaleString('en-US')}`"
-          :sub="`${data.debts.length} accounts`"
-          icon-bg="var(--color-danger-dim)"
-          value-color="var(--color-danger)"
-        >
-          <template #icon><span style="font-size:1.1rem">📉</span></template>
-        </StatCard>
-
-        <StatCard
-          label="Credit Score"
-          :value="`${data.accounts.creditScore}`"
-          sub="Fair — improving path available"
-          icon-bg="var(--color-primary-glow)"
-          value-color="var(--color-primary)"
-        >
-          <template #icon><span style="font-size:1.1rem">⭐</span></template>
-        </StatCard>
-      </section>
-
-      <!-- ── Risk Gauges ──────────────────────────────────────────── -->
-      <section class="mb-section">
-        <h2 class="section-title">Risk Indicators</h2>
-        <div class="grid-3">
-          <RiskGauge
-            :probability="data.risks.overdraft.probability"
-            :level="data.risks.overdraft.level"
-            :label="data.risks.overdraft.label"
-          />
-          <RiskGauge
-            :probability="data.risks.missingPayments.probability"
-            :level="data.risks.missingPayments.level"
-            :label="data.risks.missingPayments.label"
-          />
-          <RiskGauge
-            :probability="data.risks.creditShift.probability"
-            :level="data.risks.creditShift.level"
-            :label="data.risks.creditShift.label"
-          />
+      <section class="dash-mb">
+        <div class="dash-section">
+          <h2 class="dash-section-title">Overview</h2>
+        </div>
+        <p class="dash-section-lead">Balances and income snapshot tied to your profile.</p>
+        <div class="dash-grid-4">
+          <StatCard
+            variant="dash"
+            label="Monthly income"
+            :value="`$${data.user.monthlyIncome.toLocaleString('en-US')}`"
+            sub="Estimated cash inflow"
+            icon-bg="var(--color-info-dim)"
+            value-color="var(--color-info)"
+          >
+            <template #icon><span style="font-size:1.1rem">💵</span></template>
+          </StatCard>
+          <StatCard
+            variant="dash"
+            label="Checking"
+            :value="`$${data.accounts.checking.toLocaleString('en-US', { minimumFractionDigits: 2 })}`"
+            sub="Primary spending"
+            sub-class="text-warn"
+            icon-bg="var(--color-warning-dim)"
+            value-color="var(--color-warning)"
+          >
+            <template #icon><span style="font-size:1.1rem">🏦</span></template>
+          </StatCard>
+          <StatCard
+            variant="dash"
+            label="Savings"
+            :value="`$${data.accounts.savings.toLocaleString('en-US', { minimumFractionDigits: 2 })}`"
+            sub="Buffer & goals"
+            icon-bg="var(--color-primary-glow)"
+            value-color="var(--color-primary)"
+          >
+            <template #icon><span style="font-size:1.1rem">🛡️</span></template>
+          </StatCard>
+          <StatCard
+            variant="dash"
+            label="Credit score"
+            :value="data.accounts.creditScore != null ? `${data.accounts.creditScore}` : '—'"
+            sub="From your profile"
+            icon-bg="var(--color-surface-raised)"
+            value-color="var(--color-text)"
+          >
+            <template #icon><span style="font-size:1.1rem">⭐</span></template>
+          </StatCard>
         </div>
       </section>
 
-      <!-- ── Charts Row ───────────────────────────────────────────── -->
-      <section class="grid-2 mb-section">
-        <!-- Spending Breakdown -->
-        <div class="card">
-          <h3 class="card__title">Monthly Spending Breakdown</h3>
-          <p class="card__sub">Total: ${{ spendingTotal.toLocaleString('en-US') }}</p>
-          <DonutChart
-            :labels="data.spending.labels"
-            :amounts="data.spending.amounts"
-            :colors="data.spending.colors"
-          />
+      <section class="dash-mb dash-checking-spend" aria-labelledby="checking-spend-heading">
+        <div class="dash-section">
+          <h2 id="checking-spend-heading" class="dash-section-title">Checking &amp; spending</h2>
+        </div>
+        <p class="dash-section-lead">
+          Everything for this tab: category mix, AI behavior health, and your latest transactions—wired for your advisor agent.
+        </p>
+
+        <div class="dash-checking-spend__block">
+          <h3 class="dash-subsection">Spending mix</h3>
+          <div class="dash-grid-2">
+            <div class="dash-card dash-card--chart">
+              <h3 class="dash-card__title">Category mix</h3>
+              <p class="dash-card__sub">Total tracked: ${{ spendingTotal.toLocaleString('en-US') }}</p>
+              <div class="dash-chart-wrap">
+                <ClientOnly v-if="spendingChartReady">
+                  <DonutChart
+                    :labels="data.spending.labels"
+                    :amounts="data.spending.amounts"
+                    :colors="data.spending.colors"
+                  />
+                  <template #fallback>
+                    <div class="dash-chart-fallback" aria-hidden="true" />
+                  </template>
+                </ClientOnly>
+                <p v-else class="dash-page__hint" style="margin: 0; border: none; background: transparent; padding: 1rem 0">
+                  Add transactions or a spending series to see the breakdown.
+                </p>
+              </div>
+            </div>
+            <div class="dash-card dash-card--muted">
+              <h3 class="dash-card__title">Quick category signal</h3>
+              <p class="dash-card__sub">From your current spending mix</p>
+              <ul class="dash-insight">
+                <li>
+                  <strong>{{ topSpendCategory.label }}</strong>
+                  leads at
+                  <strong>${{ topSpendCategory.amount.toLocaleString('en-US') }}</strong>
+                  ({{ topSpendCategory.pct }}% of spend).
+                </li>
+                <li v-if="data.accounts.checking < spendingTotal">
+                  Category totals exceed displayed checking—timing of bills vs. deposits may explain the gap.
+                </li>
+                <li v-else>
+                  Behavior analysis in this same tab feeds your AI advisor context.
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
 
-        <!-- Debt Payoff Timeline -->
-        <div class="card">
-          <h3 class="card__title">Debt Payoff Projection</h3>
-          <p class="card__sub">
-            Est. payoff: <span style="color:var(--color-primary)">~12 months</span> with optimized plan
+        <div class="dash-checking-spend__block dash-checking-spend__block--behavior">
+          <h3 class="dash-subsection">Behavior &amp; AI insights</h3>
+          <p class="dash-checking-spend__behavior-lead">
+            Scores, patterns, risks, forecasts, and actions—structured so the agent can read the same payload you see here.
           </p>
-          <div style="height: 260px; margin-top: 1rem;">
-            <LineChart
-              :labels="data.debtTimeline.labels"
-              :datasets="data.debtTimeline.datasets"
-              y-prefix="$"
-            />
-          </div>
-        </div>
-      </section>
-
-      <!-- ── Financial Gains ──────────────────────────────────────── -->
-      <section class="mb-section">
-        <div class="card">
-          <div class="gains-header">
-            <div>
-              <h3 class="card__title">Financial Gains</h3>
-              <p class="card__sub">Monthly net gain and savings growth over the last 6 months</p>
-            </div>
-            <div class="gains-stat">
-              <span class="gains-stat__label">This Month</span>
-              <span class="gains-stat__value">+$730</span>
-            </div>
-          </div>
-          <div style="height: 300px; margin-top: 1rem;">
-            <LineChart
-              :labels="data.financialGains.labels"
-              :datasets="data.financialGains.datasets"
-              y-prefix="$"
-              :show-legend="true"
-              :show-zero-line="true"
-            />
-          </div>
-        </div>
-      </section>
-
-      <!-- ── Bottom Row ───────────────────────────────────────────── -->
-      <section class="grid-2 mb-section">
-        <!-- Paycheck Split -->
-        <div class="card">
-          <h3 class="card__title">Recommended Paycheck Split</h3>
-          <p class="card__sub">Based on ${{ data.user.monthlyIncome.toLocaleString('en-US') }}/mo income</p>
-          <DonutChart
-            :labels="data.paycheckSplit.labels"
-            :amounts="data.paycheckSplit.amounts"
-            :colors="data.paycheckSplit.colors"
-            cutout="60%"
+          <BehaviorInsightsPanel
+            :behavior="behaviorPayload"
+            @agent-action="onBehaviorAgentAction"
           />
         </div>
 
-        <!-- Debt Table + Activity -->
-        <div class="card">
-          <h3 class="card__title">Active Debts</h3>
-          <div class="debt-list">
-            <div v-for="debt in data.debts" :key="debt.name" class="debt-row">
-              <div>
-                <p class="debt-row__name">{{ debt.name }}</p>
-                <p class="debt-row__type">{{ debt.type }} · {{ debt.rate }}% APR</p>
-              </div>
-              <div class="debt-row__right">
-                <p class="debt-row__balance">${{ debt.balance.toLocaleString('en-US') }}</p>
-                <p class="debt-row__min">min ${{ debt.min }}/mo</p>
-              </div>
-              <div class="debt-row__bar-wrap">
-                <div
-                  class="debt-row__bar"
-                  :style="{ width: `${(debt.balance / totalDebt) * 100}%`, background: debtColor(debt.type) }"
-                />
-              </div>
-            </div>
-          </div>
-
-          <h3 class="card__title" style="margin-top: 1.5rem">Recent Activity</h3>
-          <div class="activity-list">
-            <div v-for="tx in data.recentActivity" :key="tx.description + tx.date" class="activity-row">
-              <div>
-                <p class="activity-row__desc">{{ tx.description }}</p>
-                <p class="activity-row__date">{{ tx.date }} · {{ tx.category }}</p>
-              </div>
-              <p
-                class="activity-row__amount"
-                :style="{ color: tx.amount > 0 ? 'var(--color-success)' : 'var(--color-text)' }"
+        <div class="dash-checking-spend__block">
+          <h3 class="dash-subsection">Recent activity</h3>
+          <p class="dash-checking-spend__behavior-lead" style="margin-top: -0.35rem">
+            Latest lines we use to infer rhythm and recurring costs.
+          </p>
+          <div class="dash-card" style="padding: 0">
+            <div class="dash-activity">
+              <div
+                v-for="tx in data.recentActivity"
+                :key="tx.description + tx.date"
+                class="dash-activity__row"
               >
-                {{ tx.amount > 0 ? '+' : '' }}${{ Math.abs(tx.amount).toFixed(2) }}
-              </p>
+                <div>
+                  <p class="dash-activity__desc">{{ tx.description }}</p>
+                  <p class="dash-activity__meta">{{ tx.date }} · {{ tx.category }}</p>
+                </div>
+                <p
+                  class="dash-activity__amt"
+                  :style="{ color: tx.amount > 0 ? 'var(--color-success)' : 'var(--color-text)' }"
+                >
+                  {{ tx.amount > 0 ? '+' : '' }}${{ Math.abs(tx.amount).toFixed(2) }}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -189,140 +164,86 @@
 </template>
 
 <script setup lang="ts">
+import { defaultBehaviorInsights } from '~/data/behaviorMock'
+import type { BehaviorInsightsPayload } from '~/types/behaviorInsights'
+
 definePageMeta({
   layout: 'default',
   middleware: ['auth'],
+  ssr: false,
 })
 
-const { data } = useFinancialData()
+const { data, isLoading, isUsingDummyData } = useFinancialData()
 const { user } = useAuth()
 
-/** Derive a display name from the Supabase user object. */
 const displayName = computed(() => {
-  const meta = user.value?.user_metadata
-  const fullName: string | undefined = meta?.full_name ?? meta?.name
-  if (fullName) return fullName.split(' ')[0]
+  const meta = user.value?.user_metadata as Record<string, unknown> | undefined
+  if (meta?.legal_first_name) return String(meta.legal_first_name).trim().split(/\s+/)[0] || ''
+  const fullName = meta?.full_name ?? meta?.name
+  if (typeof fullName === 'string' && fullName) return fullName.split(' ')[0] || ''
   const email = user.value?.email
-  if (email) return email.split('@')[0]
+  if (email) return email.split('@')[0] || ''
   return ''
 })
 
-/** Empty until mounted so SSR and client markup match (avoids timezone / midnight hydration mismatches). */
 const today = ref('')
-
 onMounted(() => {
   today.value = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 })
 
-const totalDebt = computed(() =>
-  data.value?.debts.reduce((s, d) => s + d.balance, 0) ?? 0,
+const spendingTotal = computed(
+  () => data.value?.spending?.amounts?.reduce((s, a) => s + a, 0) ?? 0,
 )
 
-const spendingTotal = computed(() =>
-  data.value?.spending.amounts.reduce((s, a) => s + a, 0) ?? 0,
-)
+const spendingChartReady = computed(() => {
+  const s = data.value?.spending
+  return Boolean(s?.labels?.length && s.amounts?.length && spendingTotal.value > 0)
+})
 
-function debtColor(type: string) {
-  const map: Record<string, string> = {
-    'Credit Card': '#ef4444',
-    'Auto': '#3b82f6',
-    'Medical': '#f59e0b',
+const topSpendCategory = computed(() => {
+  const d = data.value
+  if (!d?.spending?.labels?.length) {
+    return { label: '—', amount: 0, pct: 0 }
   }
-  return map[type] ?? '#6b7280'
+  let maxI = 0
+  let maxAmt = 0
+  d.spending.amounts.forEach((amt, i) => {
+    if (amt > maxAmt) {
+      maxAmt = amt
+      maxI = i
+    }
+  })
+  const total = spendingTotal.value || 1
+  return {
+    label: d.spending.labels[maxI] || 'Other',
+    amount: maxAmt,
+    pct: Math.round((maxAmt / total) * 100),
+  }
+})
+
+function isUsableBehavior(b: unknown): b is BehaviorInsightsPayload {
+  if (!b || typeof b !== 'object') return false
+  const o = b as Record<string, unknown>
+  return typeof o.score === 'number' && typeof o.aiSummary === 'string'
 }
+
+const behaviorPayload = computed<BehaviorInsightsPayload>(() => {
+  const raw = data.value as { behavior?: unknown } | null | undefined
+  const b = raw?.behavior
+  if (isUsableBehavior(b)) return b
+  return defaultBehaviorInsights
+})
+
+function onBehaviorAgentAction(payload: { actionId: string; actionLabel: string }) {
+  // Wire to FastAPI agent / rules engine (e.g. POST agentBase + /api/agent/actions)
+  console.info('[behavior → agent]', payload.actionId, payload.actionLabel)
+}
+
+useHead({ title: 'Checking & spending — AI Financial' })
 </script>
 
 <style scoped>
-.dashboard { max-width: 1200px; margin: 0 auto; }
-.dashboard__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-}
-.dashboard__title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--color-text);
-}
-.dashboard__date {
-  font-size: 0.875rem;
-  color: var(--color-text-muted);
-  margin-top: 0.25rem;
-}
-.mb-section { margin-bottom: 2rem; }
-.section-title {
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--color-text-muted);
-  margin-bottom: 1rem;
-}
-.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
-.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-
-.card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
-  padding: 1.25rem;
-}
-.card__title {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--color-text);
-  margin-bottom: 0.2rem;
-}
-.card__sub {
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-  margin-bottom: 0.5rem;
-}
-
-/* Debt list */
-.debt-list { display: flex; flex-direction: column; gap: 1rem; margin-top: 0.75rem; }
-.debt-row { position: relative; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border); }
-.debt-row:last-child { border-bottom: none; }
-.debt-row { display: grid; grid-template-columns: 1fr auto; gap: 0.25rem; }
-.debt-row__bar-wrap { grid-column: 1 / -1; height: 3px; background: var(--color-surface-raised); border-radius: 9999px; overflow: hidden; }
-.debt-row__bar { height: 100%; border-radius: 9999px; transition: width 1s ease; }
-.debt-row__name { font-size: 0.875rem; font-weight: 600; color: var(--color-text); }
-.debt-row__type { font-size: 0.72rem; color: var(--color-text-muted); margin-top: 0.1rem; }
-.debt-row__balance { font-size: 0.9rem; font-weight: 700; color: var(--color-danger); text-align: right; }
-.debt-row__min { font-size: 0.7rem; color: var(--color-text-muted); text-align: right; }
-
-/* Activity */
-.activity-list { display: flex; flex-direction: column; gap: 0.625rem; margin-top: 0.75rem; }
-.activity-row { display: flex; justify-content: space-between; align-items: center; }
-.activity-row__desc { font-size: 0.8rem; color: var(--color-text); }
-.activity-row__date { font-size: 0.7rem; color: var(--color-text-muted); margin-top: 0.1rem; }
-.activity-row__amount { font-size: 0.875rem; font-weight: 600; }
-
-.text-warning { color: var(--color-warning) !important; }
-
-/* Financial gains */
-.gains-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-.gains-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-.gains-stat__label {
-  font-size: 0.7rem;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.gains-stat__value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--color-primary);
+.text-warn {
+  color: var(--color-warning) !important;
 }
 </style>

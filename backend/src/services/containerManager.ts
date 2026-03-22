@@ -6,7 +6,7 @@ const docker = new Dockerode();
 const PORT_RANGE_START = parseInt(process.env.PORT_RANGE_START || '8100');
 const PORT_RANGE_END = parseInt(process.env.PORT_RANGE_END || '8200');
 const CONTAINER_PORT = process.env.CONTAINER_PORT || '8080';
-const AGENT_IMAGE = process.env.AGENT_IMAGE || 'ascendfi-agent:latest';
+const AGENT_IMAGE = process.env.AGENT_IMAGE || 'ascendfi-backend-agent:latest';
 const INACTIVITY_TIMEOUT_MS = parseInt(process.env.INACTIVITY_TIMEOUT_MS || '900000');
 
 const usedPorts = new Set<number>();
@@ -52,7 +52,7 @@ export async function createContainer(sessionId: string): Promise<SessionRecord>
       ExtraHosts: ['host.docker.internal:host-gateway'], // required on Linux
     },
     Env: [
-      `BACKEND_URL=http://host.docker.internal:8000`,
+      `BACKEND_URL=${process.env.AGENT_BACKEND_URL || 'http://host.docker.internal:8000'}`,
       `LM_STUDIO_BASE_URL=${process.env.LM_STUDIO_BASE_URL || 'http://host.docker.internal:1234/v1'}`,
       `LM_STUDIO_MODEL=${process.env.LM_STUDIO_MODEL || 'local-model'}`,
     ],
@@ -74,7 +74,7 @@ export async function createContainer(sessionId: string): Promise<SessionRecord>
     await waitForHealthy(hostPort);
     sessionStore.updateStatus(sessionId, 'ready');
     record.status = 'ready';
-    console.log(`[orchestrator] Container ready for session ${sessionId} on port ${hostPort}`);
+    console.log(`[backend] Agent container ready for session ${sessionId} on port ${hostPort}`);
   } catch (err) {
     // Health check timed out — clean up
     await destroySession(sessionId);
@@ -96,10 +96,10 @@ export async function destroySession(sessionId: string): Promise<void> {
     const container = docker.getContainer(record.containerId);
     await container.stop({ t: 5 });
     await container.remove({ force: true });
-    console.log(`[orchestrator] Destroyed container for session ${sessionId}`);
+    console.log(`[backend] Destroyed agent container for session ${sessionId}`);
   } catch (err) {
     // Container may have already exited — log and move on
-    console.warn(`[orchestrator] Failed to cleanly remove container ${record.containerId}:`, err);
+    console.warn(`[backend] Failed to cleanly remove container ${record.containerId}:`, err);
   }
 }
 
@@ -111,7 +111,7 @@ export function startInactivityReaper(): void {
       .filter((s) => s.status === 'ready' && now - s.lastUsedAt > INACTIVITY_TIMEOUT_MS);
 
     for (const session of stale) {
-      console.log(`[orchestrator] Reaping inactive session ${session.sessionId}`);
+      console.log(`[backend] Reaping inactive session ${session.sessionId}`);
       await destroySession(session.sessionId);
     }
   }, 60_000);

@@ -70,6 +70,7 @@
 
 <script setup lang="ts">
 const config = useRuntimeConfig()
+const { buildContext } = useChatFinancialContext()
 
 interface Message { role: 'user' | 'assistant'; content: string }
 
@@ -212,7 +213,10 @@ async function send() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ messages: messages.value }),
+          body: JSON.stringify({
+            messages: messages.value,
+            context: buildContext(),
+          }),
         }
       )
     } catch {

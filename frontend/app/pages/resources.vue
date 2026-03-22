@@ -11,11 +11,11 @@
       </NuxtLink>
       <NuxtLink to="/chat" class="card">
         <h2 class="card__title">AI Advisor</h2>
-        <p class="card__body">Streaming chat against your FastAPI agent (Claude or LM Studio).</p>
+        <p class="card__body">Streaming chat via the Node backend and Docker agent (LM Studio on the host).</p>
       </NuxtLink>
-      <a href="http://localhost:8000/docs" target="_blank" rel="noopener noreferrer" class="card">
+      <a :href="apiDocsUrl" target="_blank" rel="noopener noreferrer" class="card">
         <h2 class="card__title">API docs</h2>
-        <p class="card__body">Open <code>/docs</code> when the backend is running locally.</p>
+        <p class="card__body">Open <code>/docs</code> when <code>backend_agent/api</code> is running (FastAPI).</p>
       </a>
     </div>
   </div>
@@ -23,6 +23,13 @@
 
 <script setup lang="ts">
 definePageMeta({ layout: 'marketing' })
+
+const config = useRuntimeConfig()
+const apiDocsUrl = computed(() => {
+  const base = String(config.public.apiBase ?? 'http://localhost:8000/api')
+  const origin = base.replace(/\/api\/?$/, '')
+  return `${origin}/docs`
+})
 
 useHead({
   title: 'Resources — AI Financial',

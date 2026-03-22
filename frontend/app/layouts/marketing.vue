@@ -131,7 +131,10 @@
           <NuxtLink to="/login" class="marketing__btn marketing__btn--ghost">
             Log in
           </NuxtLink>
-          <NuxtLink to="/dashboard" class="marketing__btn marketing__btn--primary">
+          <NuxtLink
+            :to="{ path: '/get-started', query: { redirect: '/dashboard' } }"
+            class="marketing__btn marketing__btn--primary"
+          >
             Get started
           </NuxtLink>
         </div>
@@ -175,7 +178,9 @@
             <h2 class="marketing__footer-heading">Account</h2>
             <ul class="marketing__footer-list">
               <li><NuxtLink to="/login">Log in</NuxtLink></li>
-              <li><NuxtLink to="/dashboard">Get started</NuxtLink></li>
+              <li>
+                <NuxtLink :to="{ path: '/get-started', query: { redirect: '/dashboard' } }">Get started</NuxtLink>
+              </li>
             </ul>
             <p class="marketing__footer-col-note">
               Questions? See <NuxtLink to="/resources">Resources</NuxtLink> for API docs and demo setup.

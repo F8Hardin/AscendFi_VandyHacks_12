@@ -6,7 +6,7 @@
 
 ## Overview
 
-AscendFi is a full-stack web application built for VandyHacks 12. It combines a Python FastAPI backend with a Nuxt 4 frontend to deliver real-time AI-driven financial guidance — from predicting overdrafts to generating personalized debt payoff plans.
+AscendFi is a full-stack web application built for VandyHacks 12. A **Nuxt 4** frontend talks to a **Node.js backend** (sessions, routing, Docker orchestration) and **Python agent containers** (streaming LLM chat). An optional **FastAPI** service in `backend_agent/api` holds shared models and can grow into prediction and planning APIs.
 
 ---
 
@@ -15,10 +15,25 @@ AscendFi is a full-stack web application built for VandyHacks 12. It combines a 
 | Layer | Technology |
 |-------|-----------|
 | Frontend | Nuxt 4, Vue 3, Tailwind CSS, Chart.js |
-| Backend | Python 3.13, FastAPI, SSE streaming |
-| AI | Anthropic Claude (swappable via agent registry) |
-| Local AI | LM Studio (OpenAI-compatible local server) |
-| Auth / DB | Supabase *(coming soon)* |
+| Backend | Node.js, Express (agent sessions + chat proxy) |
+| Backend agent | Python 3.11+ (Dockerized Uvicorn agent; optional FastAPI in `backend_agent/api`) |
+| AI | Anthropic Claude / LM Studio (OpenAI-compatible) |
+| Auth / DB | Supabase (via **Node `backend`**, `@supabase/supabase-js`) |
+
+---
+
+## How services connect
+
+| From | To | Purpose |
+|------|-----|--------|
+| **Browser** (`localhost:3000`) | **Nuxt** | UI; auth + DB via **Node backend** cookies; Turnstile → Nuxt `/api/turnstile` |
+| **Browser** | **Node `backend`** (`NUXT_PUBLIC_AGENT_BASE`, default `:3001`) | `POST /agent/session`, `POST /agent/chat/:id` (SSE) |
+| **Node `backend`** | **Docker agent** (`backend_agent/container`) | Starts one container per session; proxies `/chat/stream` to dynamic `localhost:8100–8200` |
+| **Agent container** | **LM Studio** (host) | `LM_STUDIO_*` env from `backend/.env` at container create time |
+| **Agent container** | **FastAPI** (optional, `:8000`) | `BACKEND_URL` / `AGENT_BACKEND_URL` for future tool calls |
+| **Browser / future composables** | **FastAPI** (`NUXT_PUBLIC_API_BASE`, default `…/api`) | REST + `/api/health`; Swagger at `/docs` |
+
+Chat requests include **financial `context`** when the user is logged in and dashboard data exists (dummy or future Supabase), matching `ChatRequest` in the Python agent.
 
 ---
 
@@ -46,9 +61,9 @@ AscendFi is a full-stack web application built for VandyHacks 12. It combines a 
 
 ---
 
-## Agent Service — Container Interface
+## Backend agent — container contract
 
-The `agent-service` runs each user session in its own Docker container managed by the orchestrator. To swap in a custom agent, replace `agent/app/main.py` with any HTTP server that implements this contract:
+The **Node `backend`** runs each chat session in its own Docker container (image built from `backend_agent/container`). To swap in a custom agent, replace `backend_agent/container/app/main.py` (or the whole `app/` package) with any HTTP server that implements this contract:
 
 ### Required Endpoints
 
@@ -93,40 +108,15 @@ The `agent-service` runs each user session in its own Docker container managed b
 ```json
 { "status": "ok" }
 ```
-The orchestrator polls this before routing any traffic to the container. Return `200` once ready.
+The Node backend polls this before routing traffic to the container. Return `200` once ready.
 
 ---
 
-## Pluggable Agent Architecture
+## Roadmap: FastAPI + pluggable agents
 
-All AI logic sits behind a shared `FinancialAgentBase` interface. Swapping AI providers requires no changes to routes or business logic.
+Shared Pydantic types live under `backend_agent/api/app/models/`. The **FastAPI** app (`backend_agent/api`) is the natural place to add REST routes (risk, debt, spending, agent registry) and to match the feature table below. The **container** under `backend_agent/container` focuses on **streaming chat** (`/chat/stream`) and can call into that API via `BACKEND_URL`.
 
-```
-backend/app/agents/
-├── base.py            # Abstract interface — every agent implements this
-├── claude_agent.py    # Anthropic Claude implementation
-├── lm_studio_agent.py # Local LM Studio implementation
-└── registry.py        # AGENT_REGISTRY + get_agent() / set_active_agent()
-```
-
-**Switch agents via env var:**
-```bash
-ACTIVE_AGENT=lm_studio   # use local LM Studio model
-ACTIVE_AGENT=claude       # use Anthropic Claude
-```
-
-**Or hot-swap at runtime (no restart):**
-```bash
-curl -X POST http://localhost:8000/api/agents/lm_studio/activate
-```
-
-**Add a new agent in 2 steps:**
-1. Subclass `FinancialAgentBase` and implement all methods
-2. Add it to `AGENT_REGISTRY` in `registry.py`
-
----
-
-## API Endpoints
+Planned shape (not all implemented yet):
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -140,7 +130,7 @@ curl -X POST http://localhost:8000/api/agents/lm_studio/activate
 | `GET`  | `/api/agents` | List registered agents |
 | `POST` | `/api/agents/{name}/activate` | Hot-swap the active agent |
 
-Interactive docs available at `http://localhost:8000/docs` when the server is running.
+When those routes exist, interactive docs will be at `http://localhost:8000/docs` with `uvicorn` running from `backend_agent/api`.
 
 ---
 
@@ -175,20 +165,40 @@ Interactive docs available at `http://localhost:8000/docs` when the server is ru
 ## Getting Started
 
 ### Prerequisites
-- Python 3.13+
+- Python 3.11+ (agent container + optional FastAPI)
 - Node 20+
+- Docker (for per-session agent containers)
 - LM Studio (optional, for local AI)
 
-### Backend
+### 1. Backend (Node.js) — port `3001`
 
 ```bash
 cd backend
 cp .env.example .env
-# Add your ANTHROPIC_API_KEY or set ACTIVE_AGENT=lm_studio
-python3 -m venv venv
-venv/bin/pip install -r requirements.txt
-venv/bin/uvicorn app.main:app --reload
+npm install
+npm run dev
 ```
+
+Build the agent image first (step 3) or set `AGENT_IMAGE` to your tag.
+
+### 2. Backend agent — FastAPI (optional) — port `8000`
+
+```bash
+cd backend_agent/api
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+### 3. Backend agent — Docker image
+
+```bash
+cd backend_agent/container
+docker build -t ascendfi-backend-agent:latest .
+```
+
+Match the tag to `AGENT_IMAGE` in `backend/.env`.
 
 ### Frontend
 
@@ -200,37 +210,38 @@ npm run dev
 
 Open `http://localhost:3000`
 
-### Data Toggle
+### Data toggle
 
 ```bash
 # frontend/.env
-NUXT_PUBLIC_USE_DUMMY_DATA=true   # demo mode with dummy data
-NUXT_PUBLIC_USE_DUMMY_DATA=false  # live mode (requires Supabase setup)
+NUXT_PUBLIC_USE_DUMMY_DATA=true   # demo dashboard data (no DB reads)
+NUXT_PUBLIC_USE_DUMMY_DATA=false  # live dashboard from GET /api/finance/dashboard (needs Supabase + schema)
+NUXT_PUBLIC_AGENT_BASE=http://localhost:3001   # same origin as Node backend (auth cookies)
 ```
+
+**Supabase:** add `SUPABASE_URL` and `SUPABASE_ANON_KEY` to **`backend/.env`** (not the Nuxt app). In the Supabase dashboard, set **Site URL** to `http://localhost:3000` and add **Redirect URL** `http://localhost:3000/confirm` for email confirmation.
 
 ---
 
-## Project Structure
+## Project structure
 
 ```
 AscendFi_VandyHacks_12/
-├── backend/
-│   ├── app/
-│   │   ├── agents/          # AI agent interface + implementations
-│   │   ├── models/          # Pydantic data models
-│   │   ├── routers/         # FastAPI route handlers
-│   │   └── main.py
-│   └── requirements.txt
-└── frontend/
-    └── app/
-        ├── assets/css/      # Design tokens (CSS custom properties)
-        ├── components/
-        │   ├── charts/      # Reusable Chart.js wrappers
-        │   └── ui/          # StatCard, RiskGauge, etc.
-        ├── composables/     # useFinancialData (dummy ↔ Supabase toggle)
-        ├── data/            # Dummy financial data
-        ├── layouts/         # App shell + sidebar
-        └── pages/           # Dashboard + Chat
+├── backend/                 # Node.js — Express, session + chat proxy, Docker orchestration
+│   ├── src/
+│   └── package.json
+├── backend_agent/           # Python — agent container + optional FastAPI
+│   ├── container/           # Dockerized Uvicorn agent (/chat/stream, /health)
+│   └── api/                 # FastAPI + Pydantic models (extend for REST features)
+├── frontend/                # Nuxt 4 app
+│   └── app/
+│       ├── assets/css/
+│       ├── components/
+│       ├── composables/
+│       ├── data/
+│       ├── layouts/
+│       └── pages/
+└── supabase/                # SQL schema (profiles, financial tables, RLS)
 ```
 
 ---

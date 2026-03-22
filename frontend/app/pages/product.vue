@@ -6,7 +6,7 @@
         AI Financial (AscendFi) bundles five complementary capabilities—dashboard intelligence, predictive risk, debt
         optimization, behavioral spending, and AI-guided planning—so recovery is measurable, not motivational noise.
       </p>
-      <NuxtLink to="/login" class="page__cta">Get started</NuxtLink>
+      <NuxtLink :to="{ path: '/get-started', query: { redirect: '/dashboard' } }" class="page__cta">Get started</NuxtLink>
     </header>
 
     <section id="recovery-dashboard" class="page__section page__anchor">
@@ -91,7 +91,7 @@
     </section>
 
     <footer class="page__footer">
-      <NuxtLink to="/login" class="page__cta">Get started</NuxtLink>
+      <NuxtLink :to="{ path: '/get-started', query: { redirect: '/dashboard' } }" class="page__cta">Get started</NuxtLink>
       <NuxtLink to="/resources" class="page__cta page__cta--ghost">Resources &amp; API</NuxtLink>
     </footer>
   </div>

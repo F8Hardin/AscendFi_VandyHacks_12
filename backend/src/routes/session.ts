@@ -22,13 +22,13 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     await createContainer(sessionId);
   } catch (err) {
-    console.error('[orchestrator] Failed to create container:', err);
+    console.error('[backend] Failed to create agent container:', err);
     res.status(503).json({ error: 'Failed to start agent container', detail: String(err) });
     return;
   }
 
   res.cookie('ascendfi_session', sessionId, {
-    httpOnly: false,  // frontend JS needs to read it
+    httpOnly: true,
     sameSite: 'lax',
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
   });

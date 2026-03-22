@@ -27,13 +27,13 @@
 
             <div class="landing__hero-cta">
               <NuxtLink
-                :to="{ path: '/login', query: { redirect: '/dashboard' } }"
+                :to="{ path: '/get-started', query: { redirect: '/dashboard' } }"
                 class="landing__cta landing__cta--primary landing__cta--large"
               >
                 See your financial picture
               </NuxtLink>
               <NuxtLink
-                :to="{ path: '/login', query: { redirect: '/chat' } }"
+                :to="{ path: '/get-started', query: { redirect: '/chat' } }"
                 class="landing__cta landing__cta--secondary landing__cta--large"
               >
                 Talk to an AI advisor
@@ -42,10 +42,10 @@
 
             <p class="landing__hero-pill-label">Start here</p>
             <div class="landing__hero-pills" role="navigation" aria-label="Quick start options">
-              <NuxtLink :to="{ path: '/login', query: { redirect: '/dashboard' } }" class="landing__pill">
+              <NuxtLink :to="{ path: '/get-started', query: { redirect: '/dashboard' } }" class="landing__pill">
                 Recovery dashboard
               </NuxtLink>
-              <NuxtLink :to="{ path: '/login', query: { redirect: '/chat' } }" class="landing__pill">
+              <NuxtLink :to="{ path: '/get-started', query: { redirect: '/chat' } }" class="landing__pill">
                 AI chat
               </NuxtLink>
               <NuxtLink to="/product" class="landing__pill">How it works</NuxtLink>
@@ -120,12 +120,12 @@
     <!-- Quick action strip (secondary CTAs) -->
     <section class="landing__quick-strip" aria-label="Popular next steps">
       <div class="landing__quick-strip-inner">
-        <NuxtLink :to="{ path: '/login', query: { redirect: '/dashboard' } }" class="landing__quick-item">
+        <NuxtLink :to="{ path: '/get-started', query: { redirect: '/dashboard' } }" class="landing__quick-item">
           <span class="landing__quick-kicker">Step 1</span>
           <span class="landing__quick-title">Open your dashboard</span>
           <span class="landing__quick-desc">KPIs, gauges, and charts with demo data.</span>
         </NuxtLink>
-        <NuxtLink :to="{ path: '/login', query: { redirect: '/chat' } }" class="landing__quick-item">
+        <NuxtLink :to="{ path: '/get-started', query: { redirect: '/chat' } }" class="landing__quick-item">
           <span class="landing__quick-kicker">Step 2</span>
           <span class="landing__quick-title">Ask the AI advisor</span>
           <span class="landing__quick-desc">Streaming answers tuned to your situation.</span>
@@ -222,13 +222,13 @@
         <p class="landing__cta-sub">Open the dashboard with demo data or jump straight into the advisor.</p>
         <div class="landing__hero-cta landing__hero-cta--center">
           <NuxtLink
-            :to="{ path: '/login', query: { redirect: '/dashboard' } }"
+            :to="{ path: '/get-started', query: { redirect: '/dashboard' } }"
             class="landing__cta landing__cta--primary"
           >
             Get started
           </NuxtLink>
           <NuxtLink
-            :to="{ path: '/login', query: { redirect: '/chat' } }"
+            :to="{ path: '/get-started', query: { redirect: '/chat' } }"
             class="landing__cta landing__cta--secondary"
           >
             Start chatting

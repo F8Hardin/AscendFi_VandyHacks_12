@@ -1,3 +1,5 @@
+import { defaultBehaviorInsights } from './behaviorMock'
+
 export const dummyData = {
   user: {
     name: 'Alex Johnson',
@@ -80,6 +82,9 @@ export const dummyData = {
     amounts: [2475, 900, 450, 225, 450],
     colors: ['var(--chart-1)', 'var(--color-danger)', 'var(--chart-2)', 'var(--chart-4)', 'var(--chart-3)'],
   },
+
+  /** Behavior & AI insights (see `data/behaviorMock.ts` — rich dummy for demo) */
+  behavior: defaultBehaviorInsights,
 
   recentActivity: [
     { date: 'Mar 20', description: 'Kroger Grocery',    amount: -84.32,  category: 'Food'          },

@@ -1,0 +1,546 @@
+/* ── Dashboard shell: tab-themed pages (cash / debt / autonomous) ── */
+.dash-page {
+  --dash-accent: var(--color-primary);
+  --dash-accent-soft: var(--color-primary-glow);
+  --dash-accent-text: var(--color-primary-dim);
+  --dash-hero-bg: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--dash-accent) 9%, var(--color-surface)) 0%,
+    var(--color-surface) 48%,
+    var(--color-bg-subtle) 100%
+  );
+  --dash-hero-border: color-mix(in srgb, var(--dash-accent) 18%, var(--color-border));
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.dash-page--cash {
+  --dash-accent: #2563eb;
+  --dash-accent-soft: rgba(37, 99, 235, 0.12);
+  --dash-accent-text: #1d4ed8;
+}
+
+.dash-page--debt {
+  --dash-accent: #c2410c;
+  --dash-accent-soft: rgba(194, 65, 12, 0.12);
+  --dash-accent-text: #9a3412;
+}
+
+.dash-page--auto {
+  --dash-accent: #6d28d9;
+  --dash-accent-soft: rgba(109, 40, 217, 0.12);
+  --dash-accent-text: #5b21b6;
+}
+
+.dash-page__hint {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  margin-bottom: 1.5rem;
+  line-height: 1.55;
+  padding: 1rem 1.15rem;
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border-strong);
+}
+.dash-page__hint code {
+  font-size: 0.8rem;
+  background: var(--color-bg-subtle);
+  padding: 0.12rem 0.35rem;
+  border-radius: 0.35rem;
+}
+
+/* Hero */
+.dash-hero {
+  position: relative;
+  margin-bottom: 2rem;
+  padding: 1.35rem 1.5rem 1.5rem;
+  border-radius: 1.125rem;
+  background: var(--dash-hero-bg);
+  border: 1px solid var(--dash-hero-border);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) inset, var(--shadow-card);
+  overflow: hidden;
+}
+.dash-hero::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--dash-accent), color-mix(in srgb, var(--dash-accent) 40%, transparent));
+  border-radius: 1.125rem 0 0 1.125rem;
+}
+.dash-hero__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dash-accent-text);
+  margin-bottom: 0.5rem;
+}
+.dash-hero__eyebrow-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--dash-accent);
+  box-shadow: 0 0 0 3px var(--dash-accent-soft);
+}
+.dash-hero__title {
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  margin: 0;
+}
+.dash-hero__sub {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  margin: 0.5rem 0 0;
+  line-height: 1.55;
+  max-width: 42rem;
+}
+
+/* Sections */
+.dash-mb {
+  margin-bottom: 2.25rem;
+}
+
+/* Single “Checking & spending” tab module: mix + behavior + trail */
+.dash-checking-spend {
+  padding: 1.35rem 1.35rem 1.5rem;
+  border-radius: 1.125rem;
+  border: 1px solid color-mix(in srgb, #2563eb 14%, var(--color-border));
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #2563eb 5%, var(--color-surface)) 0%,
+    var(--color-surface) 42%,
+    var(--color-bg-subtle) 100%
+  );
+  box-shadow: var(--shadow-card);
+}
+.dash-checking-spend .dash-section .dash-section-title {
+  margin-bottom: 0.35rem;
+}
+.dash-checking-spend > .dash-section-lead {
+  margin-bottom: 1.25rem;
+}
+.dash-subsection {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text-faint);
+  margin: 0 0 0.65rem;
+}
+.dash-checking-spend__block {
+  margin-bottom: 1.75rem;
+}
+.dash-checking-spend__block:last-child {
+  margin-bottom: 0;
+}
+.dash-checking-spend__block--behavior {
+  padding-top: 0.25rem;
+}
+.dash-checking-spend__behavior-lead {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin: 0 0 1rem;
+  max-width: 44rem;
+}
+.dash-section {
+  margin-bottom: 0.35rem;
+}
+.dash-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text-faint);
+  margin: 0 0 1rem;
+}
+.dash-section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--color-border), transparent);
+  max-width: 8rem;
+}
+.dash-section-lead {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  line-height: 1.55;
+  margin: -0.35rem 0 1.1rem;
+  max-width: 48rem;
+}
+
+.dash-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+.dash-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+.dash-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.1rem;
+}
+@media (max-width: 1024px) {
+  .dash-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .dash-grid-4,
+  .dash-grid-3,
+  .dash-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Cards */
+.dash-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-card);
+  padding: 1.25rem 1.35rem;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.dash-card:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+.dash-card--chart {
+  display: flex;
+  flex-direction: column;
+}
+.dash-card--chart .dash-card__title {
+  margin-bottom: 0.15rem;
+}
+.dash-card--muted {
+  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-surface-raised) 100%);
+}
+.dash-card__title {
+  font-size: 0.9375rem;
+  font-weight: 650;
+  color: var(--color-text);
+  margin: 0 0 0.2rem;
+  letter-spacing: -0.02em;
+}
+.dash-card__sub {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin: 0 0 0.65rem;
+  line-height: 1.45;
+}
+
+.dash-chart-wrap {
+  flex: 1;
+  min-height: 220px;
+  margin-top: 0.35rem;
+  padding: 0.5rem 0;
+}
+
+/* Insight panel */
+.dash-insight {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.dash-insight li {
+  position: relative;
+  padding-left: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+.dash-insight li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.45em;
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: var(--dash-accent);
+  opacity: 0.85;
+}
+.dash-insight strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* Activity */
+.dash-activity {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 0.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  background: var(--color-surface-raised);
+}
+.dash-activity__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  transition: background 0.15s ease;
+}
+.dash-activity__row:last-child {
+  border-bottom: none;
+}
+.dash-activity__row:hover {
+  background: color-mix(in srgb, var(--color-surface) 88%, var(--dash-accent-soft));
+}
+.dash-activity__desc {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text);
+  margin: 0;
+}
+.dash-activity__meta {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  margin: 0.2rem 0 0;
+}
+.dash-activity__amt {
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* Debt list */
+.dash-debt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 0.5rem;
+}
+.dash-debt-row {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--color-border);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.35rem 1rem;
+}
+.dash-debt-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.dash-debt-row__bar {
+  grid-column: 1 / -1;
+  height: 4px;
+  background: var(--color-surface-raised);
+  border-radius: 9999px;
+  overflow: hidden;
+  margin-top: 0.35rem;
+}
+.dash-debt-row__bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.8s ease;
+}
+.dash-debt-row__name {
+  font-size: 0.875rem;
+  font-weight: 650;
+  color: var(--color-text);
+  margin: 0;
+}
+.dash-debt-row__type {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  margin: 0.15rem 0 0;
+}
+.dash-debt-row__bal {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-danger);
+  text-align: right;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.dash-debt-row__min {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  text-align: right;
+  margin: 0.1rem 0 0;
+}
+
+/* Gains header strip */
+.dash-gains-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 0.5rem;
+}
+.dash-gains-stat {
+  text-align: right;
+}
+.dash-gains-stat__label {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+.dash-gains-stat__value {
+  font-size: 1.625rem;
+  font-weight: 700;
+  color: var(--dash-accent-text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Autonomous pillars */
+.dash-pillar {
+  position: relative;
+  padding-top: 1.5rem;
+  overflow: hidden;
+}
+.dash-pillar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--dash-accent), color-mix(in srgb, var(--dash-accent) 35%, #fff));
+  opacity: 0.9;
+}
+.dash-pillar__icon {
+  font-size: 1.4rem;
+  line-height: 1;
+  margin-bottom: 0.35rem;
+}
+.dash-pillar__copy {
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+.dash-pillar__meta {
+  font-size: 0.75rem;
+  color: var(--color-text-faint);
+  margin: 0.65rem 0 0;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--color-border);
+}
+.dash-pillar__meta strong {
+  color: var(--color-text);
+}
+.dash-pillar__link {
+  color: var(--dash-accent-text);
+  font-weight: 600;
+  text-decoration: none;
+}
+.dash-pillar__link:hover {
+  text-decoration: underline;
+}
+
+/* Split legend */
+.dash-split-legend {
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.dash-split-legend__row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.6rem;
+  background: var(--color-surface-raised);
+  border: 1px solid transparent;
+  transition: border-color 0.15s ease;
+}
+.dash-split-legend__row:hover {
+  border-color: var(--color-border);
+}
+.dash-split-legend__dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+.dash-split-legend__label {
+  flex: 1;
+  color: var(--color-text);
+  font-weight: 500;
+}
+.dash-split-legend__amt {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+/* Chart blocks */
+.dash-chart-block {
+  height: 260px;
+  margin-top: 0.75rem;
+}
+.dash-chart-block--tall {
+  height: 300px;
+}
+
+/* ClientOnly chart placeholder (avoids layout jump before vue-chartjs mounts) */
+.dash-chart-fallback {
+  min-height: 220px;
+  border-radius: 0.75rem;
+  background: linear-gradient(
+    100deg,
+    var(--color-surface-raised) 40%,
+    var(--color-bg-subtle) 50%,
+    var(--color-surface-raised) 60%
+  );
+  background-size: 200% 100%;
+  animation: dash-chart-fallback-shimmer 1.25s ease-in-out infinite;
+}
+.dash-chart-fallback--line {
+  min-height: 260px;
+}
+.dash-chart-fallback--line-tall {
+  min-height: 300px;
+}
+@keyframes dash-chart-fallback-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+/* Risk gauges sit inside debt tab — soften to match hero accent */
+.dash-page--debt .risk-gauge {
+  border-radius: 1rem;
+  background: linear-gradient(160deg, var(--color-surface) 0%, var(--color-surface-raised) 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.75) inset, var(--shadow-card);
+}
