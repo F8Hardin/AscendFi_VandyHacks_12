@@ -30,7 +30,7 @@ export default defineNuxtConfig({
       /** FastAPI (backend_agent/api). Override with NUXT_PUBLIC_API_BASE */
       apiBase: 'http://localhost:8000/api',
       /** Node session + chat proxy (backend). Override with NUXT_PUBLIC_AGENT_BASE */
-      agentBase: 'http://localhost:3120',
+      agentBase: 'http://localhost:3001',
       useDummyData: 'true',
       /** Site key for Turnstile widget (public). Use Cloudflare test keys locally if needed. */
       turnstileSiteKey: '',
