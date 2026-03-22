@@ -1,13 +1,13 @@
 <template>
-  <div class="dash-page dash-page--debt">
-    <header class="dash-hero">
+  <div class="dash-page dash-page--debt debt-engines">
+    <header class="dash-hero dash-hero--compact">
       <p class="dash-hero__eyebrow">
         <span class="dash-hero__eyebrow-dot" aria-hidden="true" />
-        Tab 2 · Risk &amp; debt
+        Command center · Debt &amp; predictions
       </p>
-      <h1 class="dash-hero__title">Debt &amp; predictions</h1>
+      <h1 class="dash-hero__title">Risk detection &amp; debt strategy</h1>
       <p class="dash-hero__sub">
-        Stress tests and payoff curves—not advice. Use them to decide where extra dollars go first.
+        Early-warning risk scoring plus payoff optimization — modeled from your dashboard data, not personalized investment advice.
       </p>
     </header>
 
@@ -17,115 +17,63 @@
     </p>
 
     <template v-if="data">
-      <section class="dash-mb">
-        <div class="dash-section">
-          <h2 class="dash-section-title">Predictive signals</h2>
-        </div>
-        <p class="dash-section-lead">
-          Probability-style gauges for overdraft, missed payments, and credit pressure. Outcomes are not guaranteed.
-        </p>
-        <div class="dash-grid-3">
-          <RiskGauge
-            :probability="data.risks.overdraft.probability"
-            :level="data.risks.overdraft.level"
-            :label="data.risks.overdraft.label"
-          />
-          <RiskGauge
-            :probability="data.risks.missingPayments.probability"
-            :level="data.risks.missingPayments.level"
-            :label="data.risks.missingPayments.label"
-          />
-          <RiskGauge
-            :probability="data.risks.creditShift.probability"
-            :level="data.risks.creditShift.level"
-            :label="data.risks.creditShift.label"
-          />
-        </div>
-      </section>
-
-      <section class="dash-mb">
-        <div class="dash-section">
-          <h2 class="dash-section-title">Optimization</h2>
-        </div>
-        <p class="dash-section-lead">Projected balance decline vs. who you owe today.</p>
-        <div class="dash-grid-2">
-          <div class="dash-card dash-card--chart">
-            <h3 class="dash-card__title">Payoff projection</h3>
-            <p class="dash-card__sub">Illustrative path on an accelerated plan (demo uses ~12 months).</p>
-            <ClientOnly v-if="debtTimelineReady">
-              <div class="dash-chart-block">
-                <LineChart
-                  :labels="data.debtTimeline.labels"
-                  :datasets="debtTimelineDatasets"
-                  y-prefix="$"
-                />
-              </div>
-              <template #fallback>
-                <div class="dash-chart-fallback dash-chart-fallback--line" aria-hidden="true" />
-              </template>
-            </ClientOnly>
-            <p v-else class="dash-page__hint" style="margin-top: 1rem; margin-bottom: 0">
-              Add a <code>debt_timeline</code> series in Supabase or use demo data.
+      <!-- Financial Risk Engine -->
+      <section class="debt-eng-section" aria-labelledby="risk-engine-title">
+        <div class="debt-eng-section__head">
+          <div>
+            <span class="debt-eng-pill">Engine 1</span>
+            <h2 id="risk-engine-title" class="debt-eng-section__title">Financial Risk Engine</h2>
+            <p class="debt-eng-section__sub">
+              Understand stability, emerging risks, and what to do before you slip deeper — like a personal early-warning system.
             </p>
           </div>
-          <div class="dash-card dash-card--muted">
-            <h3 class="dash-card__title">Active debts</h3>
-            <p class="dash-card__sub">{{ data.debts.length }} accounts · ${{ totalDebt.toLocaleString('en-US') }} total</p>
-            <div class="dash-debt-list">
-              <div v-for="debt in data.debts" :key="debt.name" class="dash-debt-row">
-                <div>
-                  <p class="dash-debt-row__name">{{ debt.name }}</p>
-                  <p class="dash-debt-row__type">{{ debt.type }} · {{ debt.rate }}% APR</p>
-                </div>
-                <div>
-                  <p class="dash-debt-row__bal">${{ debt.balance.toLocaleString('en-US') }}</p>
-                  <p class="dash-debt-row__min">min ${{ debt.min }}/mo</p>
-                </div>
-                <div class="dash-debt-row__bar">
-                  <div
-                    class="dash-debt-row__bar-fill"
-                    :style="{ width: `${totalDebt ? (debt.balance / totalDebt) * 100 : 0}%`, background: debtColor(debt.type) }"
-                  />
-                </div>
-              </div>
+        </div>
+
+        <div class="debt-eng-stack">
+          <DebtRiskHero />
+          <DebtRiskCategoryGrid />
+          <div class="debt-eng-split">
+            <div>
+              <h3 class="debt-eng-h3">AI insight feed</h3>
+              <DebtInsightFeed />
             </div>
+            <div>
+              <DebtBehavioralStrip />
+            </div>
+          </div>
+          <DebtForecastPanel />
+          <div class="debt-eng-split">
+            <DebtScenarioSimulator />
+            <DebtActionPlan />
           </div>
         </div>
       </section>
 
-      <section class="dash-mb">
-        <div class="dash-section">
-          <h2 class="dash-section-title">Financial trajectory</h2>
+      <!-- Debt Optimization Engine -->
+      <section class="debt-eng-section" aria-labelledby="debt-opt-title">
+        <div class="debt-eng-section__head">
+          <div>
+            <span class="debt-eng-pill">Engine 2</span>
+            <h2 id="debt-opt-title" class="debt-eng-section__title">Debt Optimization Engine</h2>
+            <p class="debt-eng-section__sub">
+              One place for balances, strategies, and allocation ideas — built to answer “what’s the smartest way to pay this down?”
+            </p>
+          </div>
         </div>
-        <p class="dash-section-lead">Net monthly movement vs. savings balance (when series exist).</p>
-        <div class="dash-card">
-          <div class="dash-gains-head">
-            <div>
-              <h3 class="dash-card__title" style="margin-bottom: 0.15rem">Net &amp; savings</h3>
-              <p class="dash-card__sub" style="margin-bottom: 0">Last point on the net series</p>
-            </div>
-            <div class="dash-gains-stat">
-              <span class="dash-gains-stat__label">Latest net</span>
-              <span class="dash-gains-stat__value">{{ lastNetFormatted }}</span>
+
+        <div class="debt-eng-stack">
+          <DebtOptimizationHero />
+          <DebtStackCards />
+          <DebtStrategyCompare />
+          <div class="debt-eng-split debt-eng-split--wide">
+            <DebtOptimizationTimeline />
+            <div class="debt-eng-col">
+              <DebtExtraPaymentSim />
+              <DebtRecommendationFeed />
             </div>
           </div>
-          <ClientOnly v-if="financialGainsReady">
-            <div class="dash-chart-block dash-chart-block--tall">
-              <LineChart
-                :labels="data.financialGains.labels"
-                :datasets="financialGainsDatasets"
-                y-prefix="$"
-                :show-legend="true"
-                :show-zero-line="true"
-              />
-            </div>
-            <template #fallback>
-              <div class="dash-chart-fallback dash-chart-fallback--line-tall" aria-hidden="true" />
-            </template>
-          </ClientOnly>
-          <p v-else class="dash-page__hint" style="margin: 1rem 0 0">
-            Seed <code>financial_gains</code> in <code>financial_chart_series</code> or enable demo data.
-          </p>
+          <DebtMilestonesRow />
+          <DebtActionChecklist />
         </div>
       </section>
     </template>
@@ -140,73 +88,47 @@ definePageMeta({
 })
 
 const { data, isLoading, isUsingDummyData } = useFinancialData()
+const engines = useDebtPageEngines()
 
-const totalDebt = computed(() => data.value?.debts.reduce((s, d) => s + d.balance, 0) ?? 0)
-
-type LineDs = { label: string; data: number[]; color: string; fill?: boolean; dashed?: boolean }
-
-function normalizeLineDatasets(raw: unknown): LineDs[] {
-  if (!Array.isArray(raw)) return []
-  return raw
-    .map((x) => {
-      const o = x as Record<string, unknown>
-      const label = typeof o.label === 'string' ? o.label : 'Series'
-      const dataArr = Array.isArray(o.data) ? o.data.map((n) => Number(n)) : []
-      const color = typeof o.color === 'string' ? o.color : '#64748b'
-      return {
-        label,
-        data: dataArr,
-        color,
-        fill: o.fill !== false,
-        dashed: Boolean(o.dashed),
-      }
-    })
-    .filter((ds) => ds.data.length > 0)
-}
-
-const debtTimelineReady = computed(() => {
-  const d = data.value?.debtTimeline
-  return Boolean(d?.labels?.length && normalizeLineDatasets(d.datasets).length)
-})
-
-const debtTimelineDatasets = computed(() =>
-  normalizeLineDatasets(data.value?.debtTimeline?.datasets),
-)
-
-const financialGainsReady = computed(() => {
-  const d = data.value?.financialGains
-  return Boolean(d?.labels?.length && normalizeLineDatasets(d.datasets).length)
-})
-
-const financialGainsDatasets = computed(() =>
-  normalizeLineDatasets(data.value?.financialGains?.datasets),
-)
-
-const lastNetGain = computed(() => {
-  const list = financialGainsDatasets.value
-  const net =
-    list.find((d) => /net/i.test(d.label)) ??
-    list.find((d) => !/savings/i.test(d.label)) ??
-    list[0]
-  if (!net?.data?.length) return null
-  return net.data[net.data.length - 1]
-})
-
-const lastNetFormatted = computed(() => {
-  const v = lastNetGain.value
-  if (v == null) return '—'
-  const sign = v < 0 ? '−' : '+'
-  return `${sign}$${Math.abs(v).toLocaleString('en-US')}`
-})
-
-function debtColor(type: string) {
-  const map: Record<string, string> = {
-    'Credit Card': '#ef4444',
-    Auto: '#3b82f6',
-    Medical: '#f59e0b',
-  }
-  return map[type] ?? '#6b7280'
-}
+provide('debtEngines', engines)
+provide('debtScenarioMods', engines.scenarioMods)
+provide('debtPayoffMode', engines.payoffStressMode)
+provide('debtExtraPayment', engines.extraPaymentMonthly)
 
 useHead({ title: 'Debt & predictions — AI Financial' })
 </script>
+
+<style scoped>
+.dash-hero--compact {
+  margin-bottom: 1.75rem;
+}
+.debt-eng-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.debt-eng-split {
+  display: grid;
+  gap: 1.25rem;
+}
+@media (min-width: 900px) {
+  .debt-eng-split {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+  .debt-eng-split--wide {
+    grid-template-columns: 1fr 1.15fr;
+  }
+}
+.debt-eng-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.debt-eng-h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 750;
+  color: var(--color-text);
+}
+</style>

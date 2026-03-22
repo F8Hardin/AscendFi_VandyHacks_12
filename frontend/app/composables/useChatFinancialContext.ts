@@ -5,7 +5,7 @@
 export function useChatFinancialContext() {
   const { data } = useFinancialData()
 
-  function buildContext():
+  function buildContext(opts?: { dashboardAgent?: string }):
     | {
         monthly_income: number
         checking_balance: number
@@ -28,6 +28,9 @@ export function useChatFinancialContext() {
     if (!d) return undefined
 
     const extra: Record<string, unknown> = { net_worth: d.accounts.netWorth }
+    if (opts?.dashboardAgent) {
+      extra.dashboard_agent = opts.dashboardAgent
+    }
     const behavior = (d as { behavior?: unknown }).behavior
     if (behavior !== undefined && behavior !== null) {
       extra.behavior = behavior

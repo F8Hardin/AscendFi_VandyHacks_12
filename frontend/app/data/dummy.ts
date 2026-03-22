@@ -35,9 +35,26 @@ export const dummyData = {
   },
 
   debts: [
-    { name: 'Chase Visa', balance: 3200, rate: 22.99, min: 65, type: 'Credit Card' },
-    { name: 'Car Loan',   balance: 8500, rate: 6.90,  min: 285, type: 'Auto'        },
-    { name: 'Medical',   balance: 1400, rate: 0,     min: 50,  type: 'Medical'     },
+    {
+      name: 'Chase Visa',
+      balance: 3200,
+      rate: 22.99,
+      min: 65,
+      type: 'Credit Card',
+      dueInDays: 4,
+      creditLimit: 4500,
+      last4: '4421',
+    },
+    {
+      name: 'Car Loan',
+      balance: 8500,
+      rate: 6.9,
+      min: 285,
+      type: 'Auto',
+      dueInDays: 12,
+      last4: '8891',
+    },
+    { name: 'Medical', balance: 1400, rate: 0, min: 50, type: 'Medical', dueInDays: 18 },
   ],
 
   spending: {

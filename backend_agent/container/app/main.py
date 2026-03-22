@@ -1,6 +1,7 @@
 import asyncio
 import json
 from contextlib import asynccontextmanager
+from typing import Optional
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -8,7 +9,7 @@ from fastapi.responses import StreamingResponse
 
 from app.agent import init_agent, get_executor, _context_summary
 from app.callbacks import StreamingAgentCallbackHandler
-from app.models import ChatRequest
+from app.models import ChatRequest, FinancialContext
 
 load_dotenv()
 
@@ -20,6 +21,30 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="AscendFi Agent", lifespan=lifespan)
+
+
+def _dashboard_focus_instructions(ctx: Optional[FinancialContext]) -> str:
+    """Narrow advisor tone based on dashboard tab (frontend sends context.extra.dashboard_agent)."""
+    if not ctx or not ctx.extra:
+        return ""
+    mode = ctx.extra.get("dashboard_agent")
+    if mode == "checking_behavior_risk":
+        return (
+            "\n\n[Dashboard focus: Checking & spending — prioritize spending behavior, habits, "
+            "budgeting, and near-term risk such as cash flow stress, overdraft, and credit utilization. "
+            "Defer long-term investing talk unless the user asks.]"
+        )
+    if mode == "debt_predictions":
+        return (
+            "\n\n[Dashboard focus: Debt & predictions — prioritize debt balances, minimum payments, "
+            "payoff strategies, interest, and scenario-style forecasts. Keep investing secondary unless asked.]"
+        )
+    if mode == "autonomous_wealth_investment":
+        return (
+            "\n\n[Dashboard focus: Autonomous finance — prioritize emergency fund targets, automated "
+            "savings, wealth building, and prudent investment education. Still be mindful of debt if it is urgent.]"
+        )
+    return ""
 
 
 @app.get("/health")
@@ -40,7 +65,8 @@ async def chat_stream(request: ChatRequest):
         if request.context
         else ""
     )
-    full_input = user_input + context_note
+    focus_note = _dashboard_focus_instructions(request.context)
+    full_input = user_input + context_note + focus_note
 
     async def event_generator():
         task = asyncio.ensure_future(

@@ -2,9 +2,9 @@
   <div class="chat-widget" :style="containerStyle">
     <!-- Closed: pill toggle button -->
     <template v-if="!open">
-      <button class="chat-toggle" @click="toggle" aria-label="Open AI Advisor">
+      <button class="chat-toggle" @click="toggle" :aria-label="`Open ${agentShortLabel}`">
         <span class="chat-toggle__icon">💬</span>
-        <span class="chat-toggle__label">AI Advisor</span>
+        <span class="chat-toggle__label">{{ agentShortLabel }}</span>
       </button>
     </template>
 
@@ -26,7 +26,10 @@
         <div class="chat-panel__header">
           <div class="chat-panel__header-info">
             <span class="chat-panel__dot" />
-            <span class="chat-panel__title">AscendFi Advisor</span>
+            <div class="chat-panel__title-block">
+              <span class="chat-panel__title">{{ agentTitle }}</span>
+              <span class="chat-panel__subtitle">AscendFi</span>
+            </div>
           </div>
           <button class="chat-panel__close" @click="open = false" aria-label="Close chat">✕</button>
         </div>
@@ -50,7 +53,7 @@
           <textarea
             v-model="input"
             @keydown.enter.exact.prevent="send"
-            placeholder="Ask about your finances..."
+            :placeholder="inputPlaceholder"
             rows="1"
             class="chat-panel__field"
           />
@@ -71,14 +74,43 @@
 <script setup lang="ts">
 const config = useRuntimeConfig()
 const { buildContext } = useChatFinancialContext()
+const {
+  dashboardAgent,
+  agentTitle,
+  agentShortLabel,
+  welcomeMessage,
+  focusSwitchNote,
+} = useDashboardAgentFocus()
 
 interface Message { role: 'user' | 'assistant'; content: string }
 
 const open = ref(false)
 const messages = ref<Message[]>([{
   role: 'assistant',
-  content: "Hi! I'm your AscendFi advisor. Ask me anything about your financial situation.",
+  content: welcomeMessage.value,
 }])
+
+const inputPlaceholder = computed(() => {
+  switch (dashboardAgent.value) {
+    case 'debt_predictions':
+      return 'Ask about debt, payoff order, or forecasts…'
+    case 'autonomous_wealth_investment':
+      return 'Ask about savings, wealth, or investing…'
+    default:
+      return 'Ask about spending, habits, or risk…'
+  }
+})
+
+watch(dashboardAgent, (_next, prev) => {
+  if (prev === undefined) return
+  const hasUser = messages.value.some((m) => m.role === 'user')
+  if (!hasUser) {
+    messages.value = [{ role: 'assistant', content: welcomeMessage.value }]
+  } else {
+    messages.value.push({ role: 'assistant', content: focusSwitchNote.value })
+    nextTick(() => scrollToBottom())
+  }
+})
 const input = ref('')
 const streaming = ref(false)
 const streamBuffer = ref('')
@@ -215,7 +247,7 @@ async function send() {
           credentials: 'include',
           body: JSON.stringify({
             messages: messages.value,
-            context: buildContext(),
+            context: buildContext({ dashboardAgent: dashboardAgent.value }),
           }),
         }
       )
@@ -360,7 +392,20 @@ function scrollToBottom() {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.4; }
 }
+.chat-panel__title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
 .chat-panel__title { font-size: 0.875rem; font-weight: 600; color: var(--color-text); }
+.chat-panel__subtitle {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
 .chat-panel__close {
   background: none;
   border: none;

@@ -78,10 +78,52 @@
           </NuxtLink>
           <button type="button" class="drawer__close" aria-label="Close menu" @click="menuOpen = false">✕</button>
         </div>
+
+        <div class="drawer__snapshot" aria-label="Account snapshot">
+          <template v-if="isLoggedIn && financialSnapshot">
+            <div class="drawer__snap-row">
+              <span class="drawer__snap-label">Cash (checking)</span>
+              <span class="drawer__snap-value">{{ formatMoney(financialSnapshot.checking) }}</span>
+            </div>
+            <div class="drawer__snap-row">
+              <span class="drawer__snap-label">Savings</span>
+              <span class="drawer__snap-value">{{ formatMoney(financialSnapshot.savings) }}</span>
+            </div>
+            <div class="drawer__snap-row drawer__snap-row--debt">
+              <span class="drawer__snap-label">Total debt</span>
+              <span class="drawer__snap-value drawer__snap-value--debt">{{ formatMoney(financialSnapshot.totalDebt) }}</span>
+            </div>
+          </template>
+          <p v-else-if="isLoggedIn" class="drawer__snap-hint">Load your dashboard to see live balances.</p>
+          <p v-else class="drawer__snap-hint">Sign in to see your balance and debt snapshot.</p>
+        </div>
+
         <nav class="drawer__nav" aria-label="App">
-          <NuxtLink to="/dashboard" class="drawer__link" @click="menuOpen = false">Dashboard</NuxtLink>
-          <NuxtLink to="/chat" class="drawer__link" @click="menuOpen = false">AI Advisor</NuxtLink>
-          <NuxtLink to="/" class="drawer__link drawer__link--muted" @click="menuOpen = false">Marketing home</NuxtLink>
+          <p class="drawer__nav-label">Navigate</p>
+          <NuxtLink to="/dashboard" class="drawer__link" @click="menuOpen = false">
+            <span class="drawer__link-icon" aria-hidden="true">⌂</span>
+            Dashboard
+          </NuxtLink>
+          <NuxtLink to="/capital-one" class="drawer__link" @click="menuOpen = false">
+            <span class="drawer__link-icon" aria-hidden="true">◇</span>
+            Capital One offers
+          </NuxtLink>
+          <NuxtLink to="/invest" class="drawer__link" @click="menuOpen = false">
+            <span class="drawer__link-icon" aria-hidden="true">↗</span>
+            Investments
+          </NuxtLink>
+          <NuxtLink to="/goals" class="drawer__link" @click="menuOpen = false">
+            <span class="drawer__link-icon" aria-hidden="true">◎</span>
+            Goals
+          </NuxtLink>
+          <NuxtLink to="/chat" class="drawer__link" @click="menuOpen = false">
+            <span class="drawer__link-icon" aria-hidden="true">✳</span>
+            AI Advisor
+          </NuxtLink>
+          <NuxtLink to="/settings" class="drawer__link" @click="menuOpen = false">
+            <span class="drawer__link-icon" aria-hidden="true">⚙</span>
+            Settings
+          </NuxtLink>
         </nav>
       </aside>
     </Transition>
@@ -89,15 +131,35 @@
     <main class="main-content" :class="{ 'main-content--dashboard': showDashTabs }">
       <slot />
     </main>
+
+    <ClientOnly>
+      <ChatWidget v-if="showDashTabs" />
+    </ClientOnly>
   </div>
 </template>
 
 <script setup lang="ts">
 const route = useRoute()
-const { isUsingDummyData } = useFinancialData()
-const { signOut } = useAuth()
+const { data: financialData, isUsingDummyData } = useFinancialData()
+const { signOut, isLoggedIn } = useAuth()
 
 const menuOpen = ref(false)
+
+const financialSnapshot = computed(() => {
+  const d = financialData.value
+  if (!d) return null
+  const totalDebt = d.debts.reduce((s, row) => s + row.balance, 0)
+  return {
+    checking: d.accounts.checking,
+    savings: d.accounts.savings,
+    totalDebt,
+  }
+})
+
+function formatMoney(n: number) {
+  const sign = n < 0 ? '−' : ''
+  return `${sign}$${Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
 
 const showDashTabs = computed(() => route.path.startsWith('/dashboard'))
 
@@ -116,6 +178,10 @@ const topbarTabRailClass = computed(() => {
 
 const pageLabel = computed(() => {
   if (route.path.startsWith('/chat')) return 'AI Advisor'
+  if (route.path.startsWith('/capital-one')) return 'Capital One'
+  if (route.path.startsWith('/invest')) return 'Investments'
+  if (route.path.startsWith('/goals')) return 'Goals'
+  if (route.path.startsWith('/settings')) return 'Settings'
   return 'AI Financial'
 })
 
@@ -364,14 +430,71 @@ async function onLogout() {
   color: var(--color-text);
 }
 
+.drawer__snapshot {
+  margin: 0 1rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(145deg, var(--color-surface-raised), var(--color-surface));
+  border: 1px solid var(--color-border);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+}
+.drawer__snap-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.35rem 0;
+  font-size: 0.8125rem;
+}
+.drawer__snap-row + .drawer__snap-row {
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+}
+.drawer__snap-label {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+.drawer__snap-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+.drawer__snap-value--debt {
+  color: #c2410c;
+}
+.drawer__snap-row--debt .drawer__snap-label {
+  font-weight: 600;
+  color: var(--color-text);
+}
+.drawer__snap-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
 .drawer__nav {
   display: flex;
   flex-direction: column;
   padding: 1rem;
   gap: 0.25rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.drawer__nav-label {
+  margin: 0 0 0.35rem 0.35rem;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
 }
 
 .drawer__link {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
   padding: 0.65rem 0.85rem;
   border-radius: 0.5rem;
   font-size: 0.9rem;
@@ -380,12 +503,18 @@ async function onLogout() {
   text-decoration: none;
   transition: background 0.15s;
 }
+.drawer__link-icon {
+  width: 1.25rem;
+  text-align: center;
+  font-size: 0.95rem;
+  opacity: 0.85;
+}
 .drawer__link:hover {
   background: var(--color-surface-raised);
 }
-.drawer__link--muted {
-  color: var(--color-text-muted);
-  font-size: 0.85rem;
+.drawer__link.router-link-active {
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface-raised));
+  font-weight: 650;
 }
 
 .drawer-fade-enter-active,
@@ -414,6 +543,8 @@ async function onLogout() {
 .main-content--dashboard {
   background: radial-gradient(120% 80% at 50% -10%, color-mix(in srgb, var(--color-primary) 6%, transparent), transparent),
     var(--color-bg);
+  /* Room for fixed ChatWidget bubble (bottom-right) */
+  padding-bottom: 5.5rem;
 }
 
 @media (max-width: 900px) {

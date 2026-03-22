@@ -74,9 +74,7 @@
         <div class="dash-section">
           <h2 id="checking-spend-heading" class="dash-section-title">Checking &amp; spending</h2>
         </div>
-        <p class="dash-section-lead">
-          Everything for this tab: category mix, AI behavior health, and your latest transactions—wired for your advisor agent.
-        </p>
+        <p class="dash-section-lead">Spending mix, behavior snapshot, and recent activity.</p>
 
         <div class="dash-checking-spend__block">
           <h3 class="dash-subsection">Spending mix</h3>
@@ -124,7 +122,7 @@
         <div class="dash-checking-spend__block dash-checking-spend__block--behavior">
           <h3 class="dash-subsection">Behavior &amp; AI insights</h3>
           <p class="dash-checking-spend__behavior-lead">
-            Scores, patterns, risks, forecasts, and actions—structured so the agent can read the same payload you see here.
+            Quick read on habits, risks, and next steps.
           </p>
           <BehaviorInsightsPanel
             :behavior="behaviorPayload"
