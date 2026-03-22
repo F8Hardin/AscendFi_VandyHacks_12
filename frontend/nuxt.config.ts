@@ -8,6 +8,7 @@ export default defineNuxtConfig({
   routeRules: {
     '/dashboard': { ssr: false },
     '/dashboard/**': { ssr: false },
+    '/invest': { ssr: false },
   },
   build: {
     transpile: ['chart.js', 'vue-chartjs'],
@@ -26,12 +27,23 @@ export default defineNuxtConfig({
   runtimeConfig: {
     /** Cloudflare Turnstile secret — server-only; see https://developers.cloudflare.com/turnstile/ */
     turnstileSecretKey: '',
+    /**
+     * Python FastAPI agent URL (server-side only — never exposed to browser).
+     * Override with NUXT_PYTHON_AGENT_URL env var.
+     * The Python FastAPI server is started via: cd Hackathon && uvicorn app.main:app --port 8000
+     */
+    pythonAgentUrl: 'http://localhost:8000',
     public: {
-      /** FastAPI (backend_agent/api). Override with NUXT_PUBLIC_API_BASE */
+      /** Python FastAPI base (also used by Node backend proxy). Override with NUXT_PUBLIC_API_BASE */
       apiBase: 'http://localhost:8000/api',
       /** Node session + chat proxy (backend). Override with NUXT_PUBLIC_AGENT_BASE */
       agentBase: 'http://localhost:3001',
-      useDummyData: 'true',
+      /**
+       * Set to 'false' to use AI-powered data from the Python agent.
+       * Set to 'true' to always show static demo data (no backend needed).
+       * Override with NUXT_PUBLIC_USE_DUMMY_DATA env var.
+       */
+      useDummyData: 'false',
       /** Site key for Turnstile widget (public). Use Cloudflare test keys locally if needed. */
       turnstileSiteKey: '',
     },

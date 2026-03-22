@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+const PYTHON_AGENT_URL = process.env.PYTHON_AGENT_URL || 'http://localhost:8000';
+
 const SPENDING_COLORS = [
   'var(--chart-1)',
   'var(--chart-2)',
@@ -187,9 +189,6 @@ export async function buildFinanceDashboard(supabase: SupabaseClient, userId: st
       category: t.category,
     })) ?? [];
 
-  // Optional `behavior` (same shape as frontend `BehaviorInsightsPayload`) can be added
-  // when the AI agent pipeline writes insights — until then the UI falls back to defaults.
-
   return {
     user: {
       name: displayName,
@@ -209,4 +208,80 @@ export async function buildFinanceDashboard(supabase: SupabaseClient, userId: st
     paycheckSplit,
     recentActivity,
   };
+}
+
+// ── AI enrichment ──────────────────────────────────────────────────────────────
+
+type DashboardPayload = Awaited<ReturnType<typeof buildFinanceDashboard>>;
+
+/**
+ * Send the Supabase-backed dashboard through the Python AI agent to replace
+ * static risk indicators and charts with real computed values.
+ *
+ * Falls back to the original Supabase payload if the Python agent is unreachable.
+ */
+export async function enrichDashboardWithAI(payload: DashboardPayload): Promise<DashboardPayload> {
+  try {
+    const profile = {
+      name:          payload.user.name,
+      monthlyIncome: payload.user.monthlyIncome,
+      checking:      payload.accounts.checking,
+      savings:       payload.accounts.savings,
+      creditScore:   payload.accounts.creditScore ?? 634,
+      debts: payload.debts.map((d) => ({
+        name:    d.name,
+        balance: d.balance,
+        rate:    d.rate,
+        min:     d.min,
+        type:    d.type,
+      })),
+      transactions: payload.recentActivity.map((t) => ({
+        date:        t.date,
+        description: t.description,
+        amount:      t.amount,
+        category:    t.category,
+      })),
+      recentActivity: payload.recentActivity,
+    };
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15_000); // 15-s timeout
+
+    const res = await fetch(`${PYTHON_AGENT_URL}/api/dashboard`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ profile }),
+      signal:  controller.signal,
+    });
+    clearTimeout(timeout);
+
+    if (!res.ok) return payload;
+
+    const aiData = (await res.json()) as DashboardPayload;
+
+    // Merge: real Supabase accounts/debts/activity + AI-computed risks/charts/behavior
+    return {
+      user:     payload.user,
+      accounts: payload.accounts,
+      // Use AI risks (real computed values) over stored risk_indicators
+      risks:    aiData.risks,
+      // Keep Supabase debts (authoritative source) — dueInDays not in Supabase, so omit
+      debts:    payload.debts,
+      // Use Supabase spending if we have transactions, else AI fallback
+      spending: payload.spending.labels.length ? payload.spending : aiData.spending,
+      // Use AI for timeline / gains / paycheck (computed from real profile numbers)
+      debtTimeline:   aiData.debtTimeline,
+      financialGains: aiData.financialGains,
+      paycheckSplit:  aiData.paycheckSplit,
+      // AI behavior insights (full BehaviorInsightsPayload)
+      ...((aiData as Record<string, unknown>).behavior
+        ? { behavior: (aiData as Record<string, unknown>).behavior }
+        : {}),
+      // Recent activity from Supabase (real transactions)
+      recentActivity: payload.recentActivity.length ? payload.recentActivity : aiData.recentActivity,
+    };
+  } catch {
+    // Python agent down or timed out — return raw Supabase data, UI falls back to dummyData
+    return payload;
+  }
 }

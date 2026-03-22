@@ -11,9 +11,10 @@
       </p>
     </header>
 
-    <p v-if="!data && isLoading" class="dash-page__hint">Loading…</p>
+    <p v-if="!data && isLoading" class="dash-page__hint">ARIA is computing risk &amp; debt analysis…</p>
     <p v-else-if="!data && !isUsingDummyData" class="dash-page__hint">
-      Connect Supabase or enable demo data to see this tab.
+      AI agent unreachable — start the Python server:
+      <code>cd Hackathon &amp;&amp; uvicorn app.main:app --port 8000</code>
     </p>
 
     <template v-if="data">

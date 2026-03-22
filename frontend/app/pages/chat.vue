@@ -37,7 +37,11 @@
       <!-- Error overlay -->
       <div v-if="connectionError" class="status-overlay status-overlay--error">
         <span class="status-overlay__icon">⚠</span>
-        <span>Agent is not reachable. Run the Node backend (port 3001), build the Docker image from <code>backend_agent/container</code>, and try again.</span>
+        <span>
+          Agent is not reachable. Make sure both servers are running:<br>
+          <code>cd Hackathon &amp;&amp; uvicorn app.main:app --port 8000</code><br>
+          <code>cd backend &amp;&amp; npm run dev</code>
+        </span>
       </div>
 
       <!-- Connecting overlay -->

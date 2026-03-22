@@ -117,6 +117,21 @@
       </div>
     </section>
 
+    <!-- Live Market Ticker -->
+    <div v-if="marketTicker.length" class="landing__market-bar" aria-label="Live market data">
+      <div class="landing__market-inner">
+        <div class="landing__market-track">
+          <span v-for="(item, i) in [...marketTicker, ...marketTicker]" :key="`${item.name}-${i}`" class="landing__market-item">
+            <span class="landing__market-name">{{ item.name }}</span>
+            <span class="landing__market-val">{{ item.value }}</span>
+            <span v-if="item.changePct != null" class="landing__market-ch" :class="item.changePct >= 0 ? 'landing__market-ch--up' : 'landing__market-ch--dn'">
+              {{ item.changePct >= 0 ? '+' : '' }}{{ item.changePct.toFixed(2) }}%
+            </span>
+          </span>
+        </div>
+      </div>
+    </div>
+
     <!-- Quick action strip (secondary CTAs) -->
     <section class="landing__quick-strip" aria-label="Popular next steps">
       <div class="landing__quick-strip-inner">
@@ -243,6 +258,31 @@
 <script setup lang="ts">
 definePageMeta({
   layout: 'marketing',
+})
+
+// ── Market ticker ─────────────────────────────────────────────────────────
+type TickerItem = { name: string; value: string; changePct: number | null }
+const marketTicker = ref<TickerItem[]>([])
+
+onMounted(async () => {
+  if (import.meta.server) return
+  try {
+    const data = await $fetch<{ market_snapshot: Record<string, any> }>('/api/market/overview', {
+      timeout: 8_000,
+    } as any).catch(() => null)
+    if (!data?.market_snapshot) return
+
+    const items: TickerItem[] = Object.entries(data.market_snapshot)
+      .filter(([, v]) => v.value != null)
+      .map(([name, v]) => ({
+        name: name.replace(' (Fear Index)', '').replace('10-Year ', '10Y '),
+        value: typeof v.value === 'number' ? v.value.toLocaleString('en-US', { maximumFractionDigits: 2 }) : String(v.value),
+        changePct: typeof v.change_pct_today === 'number' ? v.change_pct_today : null,
+      }))
+    marketTicker.value = items
+  } catch {
+    // Market bar optional — don't block page render
+  }
 })
 
 function unsplashUrl(photoId: string, w: number) {
@@ -732,6 +772,64 @@ useHead({
   color: var(--color-text-muted);
   font-weight: 600;
 }
+
+/* ── Market ticker bar ──────────────────────────────────────────────────── */
+.landing__market-bar {
+  overflow: hidden;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.4rem 0;
+}
+
+.landing__market-inner {
+  overflow: hidden;
+}
+
+.landing__market-track {
+  display: flex;
+  gap: 2.5rem;
+  animation: ticker-scroll 40s linear infinite;
+  width: max-content;
+}
+
+.landing__market-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.landing__market-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  flex-shrink: 0;
+}
+
+.landing__market-name {
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.landing__market-val {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.landing__market-ch {
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.landing__market-ch--up { color: #16a34a; }
+.landing__market-ch--dn { color: #dc2626; }
 
 /* Quick strip — secondary paths (Rocket-style “Buying | Refinancing | Rates”) */
 .landing__quick-strip {

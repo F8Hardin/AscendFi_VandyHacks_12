@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from 'express';
 import { attachSessionCookies, clearSessionCookies } from '../config/authCookies';
 import { createAnonClient, resolveSessionFromCookies } from '../services/supabaseServer';
+import { seedUserData } from '../services/seedUserData';
 
 const router = Router();
 
@@ -64,6 +65,16 @@ router.post('/sign-up', async (req: Request, res: Response) => {
       attachSessionCookies(res, data.session.access_token, data.session.refresh_token, data.session.expires_in);
     }
 
+    // Seed demo financial data for the new user (non-blocking — runs in background)
+    if (data.user) {
+      const accessToken = data.session?.access_token;
+      setImmediate(() => {
+        seedUserData(data.user!.id, accessToken).catch((e) =>
+          console.warn('[auth] Seed failed (non-fatal):', e)
+        );
+      });
+    }
+
     res.json({
       user: data.user,
       needsEmailConfirmation: !data.session,
@@ -91,6 +102,14 @@ router.post('/session', async (req: Request, res: Response) => {
     }
 
     attachSessionCookies(res, data.session.access_token, data.session.refresh_token, data.session.expires_in);
+
+    // Seed demo data when user confirms their email (runs in background)
+    setImmediate(() => {
+      seedUserData(data.user!.id, data.session!.access_token).catch((e) =>
+        console.warn('[auth] Post-confirmation seed failed (non-fatal):', e)
+      );
+    });
+
     res.json({ user: data.user });
   } catch (e) {
     res.status(500).json({ message: String(e) });

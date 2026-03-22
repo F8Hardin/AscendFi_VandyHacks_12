@@ -19,3 +19,8 @@ frontend/dist/
 # General
 .DS_Store
 *.pyc
+
+# Hackathon agent
+Hackathon/.env
+Hackathon/**/__pycache__/
+Hackathon/.claude/

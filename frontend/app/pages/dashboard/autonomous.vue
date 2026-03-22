@@ -11,9 +11,10 @@
       </p>
     </header>
 
-    <p v-if="!data && isLoading" class="dash-page__hint">Loading…</p>
+    <p v-if="!data && isLoading" class="dash-page__hint">ARIA is building your autonomous finance plan…</p>
     <p v-else-if="!data && !isUsingDummyData" class="dash-page__hint">
-      Connect Supabase or enable demo data to see this tab.
+      AI agent unreachable — start the Python server:
+      <code>cd Hackathon &amp;&amp; uvicorn app.main:app --port 8000</code>
     </p>
 
     <template v-if="data">
@@ -37,6 +38,42 @@
                 <p v-if="step.impact" class="next-steps__impact">{{ step.impact }}</p>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- AI Behavior Profile -->
+      <section v-if="behaviorProfile" class="dash-mb">
+        <div class="dash-section">
+          <h2 class="dash-section-title">AI behavior profile</h2>
+        </div>
+        <div class="dash-grid-2">
+          <div class="dash-card dash-card--profile">
+            <div class="profile-header">
+              <span v-if="behaviorProfile.archetypeEmoji" class="profile-emoji">{{ behaviorProfile.archetypeEmoji }}</span>
+              <div>
+                <h3 class="profile-archetype">{{ behaviorProfile.archetype ?? 'Financial Profile' }}</h3>
+                <p v-if="behaviorProfile.scoreBand" class="profile-band">{{ behaviorProfile.scoreBand }}</p>
+              </div>
+              <div v-if="behaviorProfile.score !== null" class="profile-score">
+                <span class="profile-score__num">{{ behaviorProfile.score }}</span>
+                <span class="profile-score__label">/100</span>
+              </div>
+            </div>
+            <div v-if="behaviorProfile.trend" class="profile-trend">
+              <span class="profile-trend__label">Trend:</span>
+              <span
+                class="profile-trend__val"
+                :class="behaviorProfile.trend === 'improving' ? 'profile-trend--up' : behaviorProfile.trend === 'declining' ? 'profile-trend--down' : ''"
+              >
+                {{ behaviorProfile.trend === 'improving' ? '↑ Improving' : behaviorProfile.trend === 'declining' ? '↓ Declining' : '→ Stable' }}
+              </span>
+            </div>
+          </div>
+          <div class="dash-card dash-card--muted">
+            <h3 class="dash-card__title">AI summary</h3>
+            <p v-if="behaviorProfile.aiSummary" class="profile-summary">{{ behaviorProfile.aiSummary }}</p>
+            <p v-else class="dash-card__sub">Run the Python agent for a personalized AI summary.</p>
           </div>
         </div>
       </section>
@@ -1018,16 +1055,29 @@ const chartOptions = {
   },
 }
 
-// Next Steps
+// Next Steps — AI recommendations take priority over hardcoded logic
 const nextSteps = computed(() => {
   if (!data.value) return []
+
+  // Use AI behavior recommendations if available
+  const aiRecs = (data.value as any).behavior?.recommendations as any[] | undefined
+  if (aiRecs?.length) {
+    return aiRecs.map((rec: any) => ({
+      priority: rec.priority ?? rec.urgency ?? 'medium',
+      title: rec.title ?? rec.action ?? rec.label ?? String(rec),
+      description: rec.description ?? rec.rationale ?? rec.reason ?? '',
+      impact: rec.impact ?? rec.expectedImpact ?? '',
+    }))
+  }
+
+  // Fallback: rule-based heuristics
   const steps: any[] = []
-  
+
   if (data.value.accounts.savings < 500) {
     steps.push({
       priority: 'high',
       title: 'Build $500 starter emergency fund',
-      description: `You have $${data.value.accounts.savings.toFixed(0)}, need $${500 - data.value.accounts.savings.toFixed(0)} more`,
+      description: `You have $${data.value.accounts.savings.toFixed(0)}, need $${(500 - data.value.accounts.savings).toFixed(0)} more`,
     })
   } else if (monthsCovered.value < 3) {
     steps.push({
@@ -1036,7 +1086,7 @@ const nextSteps = computed(() => {
       description: `${(3 - monthsCovered.value).toFixed(1)} months to reach 3-month target`,
     })
   }
-  
+
   const highInterestDebts = data.value.debts.filter(d => d.rate >= 15)
   if (highInterestDebts.length > 0) {
     const d = highInterestDebts[0]
@@ -1046,12 +1096,26 @@ const nextSteps = computed(() => {
       description: 'Add $100/mo to save on interest',
     })
   }
-  
+
   if (steps.length === 0) {
     steps.push({ priority: 'low', title: "You're on track!", description: 'Keep following your current plan' })
   }
-  
+
   return steps
+})
+
+// Behavior profile from AI
+const behaviorProfile = computed(() => {
+  const b = (data.value as any)?.behavior
+  if (!b) return null
+  return {
+    archetype: b.profile?.archetype ?? null,
+    archetypeEmoji: b.profile?.emoji ?? (b.profile?.archetype?.includes('Survivor') ? '🆘' : b.profile?.archetype ? '🚀' : null),
+    score: typeof b.score === 'number' ? b.score : null,
+    scoreBand: b.scoreBand ?? null,
+    trend: b.trend ?? null,
+    aiSummary: b.aiSummary ?? null,
+  }
 })
 
 function getAprClass(rate: number) {
@@ -1081,6 +1145,26 @@ useHead({ title: 'Autonomous finance — AI Financial' })
 .progress-bar__fill--warning { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
 .progress-bar__fill--danger { background: linear-gradient(90deg, #ef4444, #f87171); }
 .progress-bar__label { font-size: 0.8125rem; color: #64748b; margin: 0; }
+
+/* AI Behavior Profile */
+.dash-card--profile { border-left: 4px solid var(--color-primary, #6366f1); }
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+.profile-emoji { font-size: 2rem; line-height: 1; flex-shrink: 0; }
+.profile-archetype { font-size: 1rem; font-weight: 700; margin: 0 0 0.1rem; }
+.profile-band { font-size: 0.775rem; color: var(--color-text-muted); margin: 0; }
+.profile-score { margin-left: auto; text-align: center; }
+.profile-score__num { font-size: 1.75rem; font-weight: 800; color: var(--color-primary, #6366f1); }
+.profile-score__label { font-size: 0.7rem; color: var(--color-text-muted); margin-left: 1px; }
+.profile-trend { font-size: 0.8rem; display: flex; gap: 0.4rem; align-items: center; }
+.profile-trend__label { color: var(--color-text-muted); }
+.profile-trend--up { color: #22c55e; font-weight: 600; }
+.profile-trend--down { color: #ef4444; font-weight: 600; }
+.profile-summary { font-size: 0.875rem; line-height: 1.6; color: var(--color-text); margin: 0; }
 
 /* Next Steps */
 .dash-card--next-steps { border-left: 4px solid #3b82f6; }

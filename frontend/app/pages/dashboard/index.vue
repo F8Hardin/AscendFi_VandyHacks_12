@@ -14,12 +14,53 @@
       </p>
     </header>
 
-    <p v-if="!data && isLoading" class="dash-page__hint">Loading your dashboard…</p>
-    <p v-else-if="!data && !isUsingDummyData" class="dash-page__hint">
-      No data loaded. Check that the Node backend has <code>SUPABASE_URL</code> / <code>SUPABASE_ANON_KEY</code> and your Supabase tables exist.
+    <!-- AI status bar -->
+    <div class="dash-ai-bar">
+      <span v-if="isLoading" class="dash-ai-bar__status dash-ai-bar__status--loading">
+        <span class="dash-ai-bar__dot" />
+        ARIA is computing your dashboard…
+      </span>
+      <span v-else-if="!isUsingDummyData && data" class="dash-ai-bar__status dash-ai-bar__status--live">
+        <span class="dash-ai-bar__dot dash-ai-bar__dot--live" />
+        AI-powered · live calculations
+      </span>
+      <span v-else-if="isUsingDummyData" class="dash-ai-bar__status dash-ai-bar__status--demo">
+        <span class="dash-ai-bar__dot dash-ai-bar__dot--demo" />
+        Demo data · start the Python agent for live AI
+      </span>
+      <button
+        class="dash-ai-bar__refresh"
+        :disabled="isLoading"
+        @click="refreshAI()"
+        title="Re-run AI analysis"
+      >
+        {{ isLoading ? 'Computing…' : '⟳ Refresh AI' }}
+      </button>
+    </div>
+
+    <p v-if="!data && isLoading" class="dash-page__hint">ARIA is running your financial analysis…</p>
+    <p v-else-if="!data && aiError" class="dash-page__hint">
+      AI agent unreachable. Start the Python server:
+      <code>cd Hackathon &amp;&amp; uvicorn app.main:app --port 8000</code>
     </p>
 
     <template v-if="data">
+
+      <!-- ── AI Risk chips ──────────────────────────────────────────────────── -->
+      <div v-if="data.risks" class="dash-risk-row">
+        <div
+          v-for="(risk, key) in data.risks"
+          :key="key"
+          class="dash-risk-chip"
+          :class="`dash-risk-chip--${risk.level}`"
+          :title="risk.factors?.join(' · ')"
+        >
+          <span class="dash-risk-icon">{{ risk.level === 'high' ? '🔴' : risk.level === 'moderate' ? '🟡' : '🟢' }}</span>
+          <span class="dash-risk-label">{{ risk.label }}</span>
+          <span class="dash-risk-prob">{{ Math.round((risk.probability ?? 0) * 100) }}%</span>
+        </div>
+      </div>
+
       <section class="dash-mb">
         <div class="dash-section">
           <h2 class="dash-section-title">Overview</h2>
@@ -130,6 +171,91 @@
           />
         </div>
 
+      <!-- ── Financial Momentum ─────────────────────────────────────────────── -->
+      <div class="dash-checking-spend__block dash-checking-spend__block--momentum">
+        <h3 class="dash-subsection">Financial momentum</h3>
+        <p class="dash-checking-spend__behavior-lead">AI-computed trends: net gains over time and your debt paydown trajectory.</p>
+        <div class="dash-grid-2">
+          <!-- Financial Gains -->
+          <div class="dash-card dash-card--chart">
+            <h3 class="dash-card__title">Net financial gains</h3>
+            <p class="dash-card__sub">Monthly cash gain &amp; savings balance (AI)</p>
+            <div class="dash-chart-wrap dash-chart-wrap--line" v-if="financialGainsReady">
+              <svg class="dash-sparkline" viewBox="0 0 300 80" preserveAspectRatio="none" aria-hidden="true">
+                <defs>
+                  <linearGradient id="gainGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#22c55e" stop-opacity="0.25" />
+                    <stop offset="100%" stop-color="#22c55e" stop-opacity="0" />
+                  </linearGradient>
+                </defs>
+                <polygon
+                  v-if="(data as any).financialGains?.datasets?.[0]"
+                  :points="svgFillPoints((data as any).financialGains.datasets[0].data, 300, 80)"
+                  fill="url(#gainGrad)"
+                />
+                <polyline
+                  v-if="(data as any).financialGains?.datasets?.[0]"
+                  :points="svgLinePoints((data as any).financialGains.datasets[0].data, 300, 80)"
+                  fill="none" stroke="#22c55e" stroke-width="2" stroke-linejoin="round"
+                />
+                <polyline
+                  v-if="(data as any).financialGains?.datasets?.[1]"
+                  :points="svgLinePoints((data as any).financialGains.datasets[1].data, 300, 80)"
+                  fill="none" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4 3" stroke-linejoin="round"
+                />
+              </svg>
+              <div class="dash-sparkline-legend">
+                <span v-for="ds in (data as any).financialGains.datasets" :key="ds.label" class="dash-sparkline-legend__item">
+                  <span class="dash-sparkline-legend__dot" :style="{ background: ds.color }" />
+                  {{ ds.label }}
+                </span>
+              </div>
+              <div class="dash-sparkline-labels">
+                <span>{{ (data as any).financialGains.labels[0] }}</span>
+                <span>{{ (data as any).financialGains.labels[Math.floor((data as any).financialGains.labels.length / 2)] }}</span>
+                <span>{{ (data as any).financialGains.labels[(data as any).financialGains.labels.length - 1] }}</span>
+              </div>
+            </div>
+            <p v-else class="dash-page__hint" style="margin:0;border:none;background:transparent;padding:1rem 0">
+              Gain data generated after AI analysis runs.
+            </p>
+          </div>
+          <!-- Debt Timeline -->
+          <div class="dash-card dash-card--chart">
+            <h3 class="dash-card__title">Debt paydown trajectory</h3>
+            <p class="dash-card__sub">AI-projected total balance over time</p>
+            <div class="dash-chart-wrap dash-chart-wrap--line" v-if="debtTimelineReady">
+              <svg class="dash-sparkline" viewBox="0 0 300 80" preserveAspectRatio="none" aria-hidden="true">
+                <defs>
+                  <linearGradient id="debtGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#ef4444" stop-opacity="0.2" />
+                    <stop offset="100%" stop-color="#ef4444" stop-opacity="0" />
+                  </linearGradient>
+                </defs>
+                <polygon
+                  v-if="(data as any).debtTimeline?.datasets?.[0]"
+                  :points="svgFillPoints((data as any).debtTimeline.datasets[0].data, 300, 80)"
+                  fill="url(#debtGrad)"
+                />
+                <polyline
+                  v-if="(data as any).debtTimeline?.datasets?.[0]"
+                  :points="svgLinePoints((data as any).debtTimeline.datasets[0].data, 300, 80)"
+                  fill="none" stroke="#ef4444" stroke-width="2" stroke-linejoin="round"
+                />
+              </svg>
+              <div class="dash-sparkline-labels">
+                <span>{{ (data as any).debtTimeline.labels[0] }}</span>
+                <span>{{ (data as any).debtTimeline.labels[Math.floor((data as any).debtTimeline.labels.length / 2)] }}</span>
+                <span>{{ (data as any).debtTimeline.labels[(data as any).debtTimeline.labels.length - 1] }}</span>
+              </div>
+            </div>
+            <p v-else class="dash-page__hint" style="margin:0;border:none;background:transparent;padding:1rem 0">
+              Debt timeline generated after AI analysis runs.
+            </p>
+          </div>
+        </div>
+      </div>
+
         <div class="dash-checking-spend__block">
           <h3 class="dash-subsection">Recent activity</h3>
           <p class="dash-checking-spend__behavior-lead" style="margin-top: -0.35rem">
@@ -171,7 +297,7 @@ definePageMeta({
   ssr: false,
 })
 
-const { data, isLoading, isUsingDummyData } = useFinancialData()
+const { data, isLoading, isUsingDummyData, aiError, refreshAI } = useFinancialData()
 const { user } = useAuth()
 
 const displayName = computed(() => {
@@ -219,6 +345,35 @@ const topSpendCategory = computed(() => {
   }
 })
 
+const financialGainsReady = computed(() => {
+  const fg = (data.value as any)?.financialGains
+  return Boolean(fg?.labels?.length && fg?.datasets?.[0]?.data?.length > 0)
+})
+
+const debtTimelineReady = computed(() => {
+  const dt = (data.value as any)?.debtTimeline
+  return Boolean(dt?.labels?.length && dt?.datasets?.[0]?.data?.length > 0)
+})
+
+function svgLinePoints(values: number[], w: number, h: number): string {
+  if (!values?.length) return ''
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  const range = max - min || 1
+  const pad = 4
+  return values.map((v, i) => {
+    const x = (i / (values.length - 1)) * w
+    const y = h - pad - ((v - min) / range) * (h - pad * 2)
+    return `${x.toFixed(1)},${y.toFixed(1)}`
+  }).join(' ')
+}
+
+function svgFillPoints(values: number[], w: number, h: number): string {
+  if (!values?.length) return ''
+  const line = svgLinePoints(values, w, h)
+  return `0,${h} ${line} ${w},${h}`
+}
+
 function isUsableBehavior(b: unknown): b is BehaviorInsightsPayload {
   if (!b || typeof b !== 'object') return false
   const o = b as Record<string, unknown>
@@ -243,5 +398,146 @@ useHead({ title: 'Checking & spending — AI Financial' })
 <style scoped>
 .text-warn {
   color: var(--color-warning) !important;
+}
+
+/* ── AI status bar ─────────────────────────────────────────────────────────── */
+.dash-ai-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding: 0.5rem 0.875rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  font-size: 0.8rem;
+}
+
+.dash-ai-bar__status {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1;
+  color: var(--color-text-muted);
+}
+
+.dash-ai-bar__dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--color-text-faint);
+  flex-shrink: 0;
+}
+
+.dash-ai-bar__status--loading .dash-ai-bar__dot {
+  background: var(--color-primary);
+  animation: ai-pulse 1.2s ease-in-out infinite;
+}
+
+.dash-ai-bar__dot--live { background: var(--color-success, #22c55e); }
+.dash-ai-bar__dot--demo { background: var(--color-warning, #f59e0b); }
+
+.dash-ai-bar__refresh {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.775rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: var(--color-primary-glow, rgba(99,102,241,0.08));
+  border: 1px solid var(--color-primary-glow, rgba(99,102,241,0.2));
+  border-radius: 999px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+
+.dash-ai-bar__refresh:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@keyframes ai-pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.3 } }
+
+/* ── AI Risk chips ──────────────────────────────────────────────────────────── */
+.dash-risk-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.dash-risk-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.775rem;
+  font-weight: 600;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: default;
+}
+
+.dash-risk-chip--high {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.dash-risk-chip--moderate {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #d97706;
+}
+
+.dash-risk-chip--low {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.25);
+  color: #16a34a;
+}
+
+.dash-risk-label { font-weight: 600; }
+.dash-risk-prob  { opacity: 0.75; font-weight: 500; }
+
+/* ── Sparkline charts ──────────────────────────────────────────────────────── */
+.dash-chart-wrap--line {
+  padding: 0.5rem 0 0;
+}
+
+.dash-sparkline {
+  width: 100%;
+  height: 80px;
+  display: block;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.dash-sparkline-legend {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.dash-sparkline-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.dash-sparkline-legend__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dash-sparkline-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--color-text-faint);
+  margin-top: 0.3rem;
 }
 </style>
