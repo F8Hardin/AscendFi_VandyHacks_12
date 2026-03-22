@@ -1,12 +1,40 @@
 # AscendFi — VandyHacks 12
 
-> AI-powered financial recovery platform that helps users predict risk, eliminate debt, understand spending behavior, and build autonomous finance plans.
+> AI-powered personal finance platform that predicts risk, eliminates debt, tracks spending behavior, and builds autonomous finance plans — powered by a multi-agent Python system and a real-time Nuxt frontend.
 
 ---
 
-## Overview
+## Table of Contents
 
-AscendFi is a full-stack web application built for VandyHacks 12. A **Nuxt 4** frontend talks to a **Node.js backend** (sessions, routing, Docker orchestration) and **Python agent containers** (streaming LLM chat). An optional **FastAPI** service in `backend_agent/api` holds shared models and can grow into prediction and planning APIs.
+- [What It Does](#what-it-does)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Prerequisites](#prerequisites)
+- [Quick Start (Recommended)](#quick-start-recommended)
+- [Manual Setup — macOS / Linux](#manual-setup--macos--linux)
+- [Manual Setup — Windows](#manual-setup--windows)
+- [Environment Variables](#environment-variables)
+- [Supabase Setup (Auth + Database)](#supabase-setup-auth--database)
+- [Running Without Supabase (Demo Mode)](#running-without-supabase-demo-mode)
+- [API Keys](#api-keys)
+- [Dashboard Pages](#dashboard-pages)
+- [How the Services Connect](#how-the-services-connect)
+- [Troubleshooting](#troubleshooting)
+- [Team](#team)
+
+---
+
+## What It Does
+
+AscendFi is a full-stack AI financial platform with three dashboard tabs:
+
+| Tab | What You Get |
+|-----|-------------|
+| **Checking & Spending** | AI risk chips (overdraft, missed payments, credit shift), spending donut, behavior insights panel, financial gains sparkline, debt paydown trajectory |
+| **Debt & Investments** | Debt payoff accelerator (avalanche vs. snowball), stock watchlist with live prices, interactive charts |
+| **Autonomous Finance** | AI behavior profile, AI-recommended next steps, paycheck split, emergency fund tracker, sinking fund goals |
+
+The **Python multi-agent system** (`Hackathon/`) runs as a FastAPI server and powers all AI features: risk prediction, debt optimization, behavioral analysis, and a conversational advisor (ARIA) accessible via the Chat page.
 
 ---
 
@@ -14,238 +42,448 @@ AscendFi is a full-stack web application built for VandyHacks 12. A **Nuxt 4** f
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Nuxt 4, Vue 3, Tailwind CSS, Chart.js |
-| Backend | Node.js, Express (agent sessions + chat proxy) |
-| Backend agent | Python 3.11+ (Dockerized Uvicorn agent; optional FastAPI in `backend_agent/api`) |
-| AI | Anthropic Claude / LM Studio (OpenAI-compatible) |
-| Auth / DB | Supabase (via **Node `backend`**, `@supabase/supabase-js`) |
+| Frontend | Nuxt 4, Vue 3, Tailwind CSS, Chart.js, lightweight-charts v5 |
+| Node Backend | Node.js 20+, Express (auth sessions, finance API proxy) |
+| Python Agent | FastAPI, Uvicorn, multi-agent orchestration (Anthropic Claude, OpenAI) |
+| AI Models | Anthropic Claude, OpenAI GPT, Google Gemini (configurable) |
+| Auth / DB | Supabase (Postgres + Auth) |
+| Market Data | stooq.com (free, no API key needed) |
 
 ---
 
-## How services connect
+## Project Structure
 
-| From | To | Purpose |
-|------|-----|--------|
-| **Browser** (`localhost:3000`) | **Nuxt** | UI; auth + DB via **Node backend** cookies; Turnstile → Nuxt `/api/turnstile` |
-| **Browser** | **Node `backend`** (`NUXT_PUBLIC_AGENT_BASE`, default `:3001`) | `POST /agent/session`, `POST /agent/chat/:id` (SSE) |
-| **Node `backend`** | **Docker agent** (`backend_agent/container`) | Starts one container per session; proxies `/chat/stream` to dynamic `localhost:8100–8200` |
-| **Agent container** | **LM Studio** (host) | `LM_STUDIO_*` env from `backend/.env` at container create time |
-| **Agent container** | **FastAPI** (optional, `:8000`) | `BACKEND_URL` / `AGENT_BACKEND_URL` for future tool calls |
-| **Browser / future composables** | **FastAPI** (`NUXT_PUBLIC_API_BASE`, default `…/api`) | REST + `/api/health`; Swagger at `/docs` |
-
-Chat requests include **financial `context`** when the user is logged in and dashboard data exists (dummy or future Supabase), matching `ChatRequest` in the Python agent.
-
----
-
-## AI Feature Modules
-
-### 1. Predictive Risk Engine
-- **Missing Payment Prediction** — forecasts probability of missing upcoming bills
-- **Overdraft Probability** — estimates likelihood of checking account overdraft in the next 30 days
-- **Credit Score Shift Detection** — flags major positive or negative credit score changes on the horizon
-
-### 2. Debt Optimization Engine
-- Analyzes all debt accounts (balance, APR, minimums)
-- Compares avalanche, snowball, and hybrid payoff strategies
-- Returns a month-by-month action plan with estimated payoff date and total interest saved
-
-### 3. Behavioral Spending Tracker
-- Identifies spending habits and category patterns
-- Detects anomalies and situational spending driven by life events (job loss, medical emergency, relocation, divorce, new child)
-- Tracks month-over-month spending trends
-
-### 4. Autonomous Finance Planner
-- Generates a recommended paycheck split (needs, debt payoff, emergency fund, investments, discretionary)
-- Suggests investment vehicles based on current financial state
-- Sets emergency fund targets tied to income and risk level
-
----
-
-## Backend agent — container contract
-
-The **Node `backend`** runs each chat session in its own Docker container (image built from `backend_agent/container`). To swap in a custom agent, replace `backend_agent/container/app/main.py` (or the whole `app/` package) with any HTTP server that implements this contract:
-
-### Required Endpoints
-
-#### `POST /chat/stream`
-
-**Request body:**
-```json
-{
-  "messages": [
-    { "role": "user" | "assistant", "content": "string" }
-  ],
-  "context": {
-    "monthly_income": 5000.0,
-    "checking_balance": 1200.0,
-    "savings_balance": 300.0,
-    "bills": [
-      { "name": "Rent", "amount": 1200.0, "due_date": "2026-04-01", "category": "Housing" }
-    ],
-    "debts": [
-      { "name": "Visa", "balance": 4500.0, "interest_rate": 0.22, "minimum_payment": 90.0, "type": "credit_card" }
-    ],
-    "spending_history": [
-      { "date": "2026-03-15", "amount": 45.0, "category": "Food", "description": "Grocery run" }
-    ],
-    "credit_score": 620,
-    "life_events": ["job_loss"],
-    "extra": {}
-  }
-}
+```
+AscendFi_VandyHacks_12/
+├── start-dev.sh             ← One-command launcher (macOS/Linux)
+├── Hackathon/               ← Python multi-agent FastAPI server
+│   ├── app/
+│   │   └── main.py          ← FastAPI entry point (port 8000)
+│   ├── agents/              ← Supervisor, Risk, Debt, Behaviour, Investment agents
+│   ├── tools/               ← Financial calculators, market data, ML predictors
+│   ├── memory/              ← Conversation store
+│   ├── requirements.txt
+│   └── .env                 ← Your API keys (never commit this file)
+├── backend/                 ← Node.js Express server (port 3001)
+│   ├── src/
+│   └── .env
+├── frontend/                ← Nuxt 4 app (port 3000)
+│   ├── app/
+│   │   ├── components/
+│   │   ├── composables/
+│   │   └── pages/
+│   │       └── dashboard/   ← index.vue, autonomous.vue, debt.vue
+│   ├── server/api/          ← Nuxt server routes (market data proxy)
+│   └── .env
+└── supabase/                ← SQL schema files
 ```
 
-**Response:** Server-Sent Events (SSE) stream. Each line is `data: <json>\n\n`:
+---
 
-| Event | Shape | Description |
-|-------|-------|-------------|
-| Token chunk | `{"type": "token", "text": "..."}` | Append to chat output |
-| Tool activity | `{"type": "tool_start", "name": "..."}` | Shown in "thinking" steps |
-| Stream end | `{"type": "done"}` | Stop reading |
-| Error | `{"type": "error", "message": "..."}` | Surface to user |
+## Prerequisites
 
-#### `GET /health`
-```json
-{ "status": "ok" }
+Install these before anything else.
+
+### macOS
+
+```bash
+# 1. Install Homebrew (if you don't have it)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# 2. Install Node.js 20+ and Python 3.11+
+brew install node python@3.11
+
+# 3. Verify
+node --version    # should print v20+
+python3 --version # should print 3.11+
+npm --version
+pip3 --version
 ```
-The Node backend polls this before routing traffic to the container. Return `200` once ready.
+
+### Windows
+
+1. **Node.js 20+** — download the LTS installer from [nodejs.org](https://nodejs.org) and run it
+2. **Python 3.11+** — download from [python.org](https://www.python.org/downloads/)
+   - On the first install screen, **check "Add Python to PATH"** before clicking Install
+3. **Git** — download from [git-scm.com](https://git-scm.com/download/win)
+
+After installing, open **PowerShell** and verify:
+
+```powershell
+node --version    # v20+
+python --version  # 3.11+
+npm --version
+pip --version
+```
+
+> All Windows commands below use **PowerShell**. Git Bash also works.
 
 ---
 
-## Roadmap: FastAPI + pluggable agents
+## Quick Start (Recommended)
 
-Shared Pydantic types live under `backend_agent/api/app/models/`. The **FastAPI** app (`backend_agent/api`) is the natural place to add REST routes (risk, debt, spending, agent registry) and to match the feature table below. The **container** under `backend_agent/container` focuses on **streaming chat** (`/chat/stream`) and can call into that API via `BACKEND_URL`.
+The fastest way to get everything running is with the included launcher script.
 
-Planned shape (not all implemented yet):
+### macOS / Linux
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/chat/stream` | SSE streaming chat (context-aware) |
-| `POST` | `/api/predict/missing-payments` | Predict payment failure risk |
-| `POST` | `/api/predict/overdraft` | 30-day overdraft probability |
-| `POST` | `/api/predict/credit-score` | Credit score shift forecast |
-| `POST` | `/api/debt/optimize` | Debt payoff plan |
-| `POST` | `/api/spending/analyze` | Spending habits + life event detection |
-| `POST` | `/api/finance/autonomous-plan` | Paycheck split + investment recommendations |
-| `GET`  | `/api/agents` | List registered agents |
-| `POST` | `/api/agents/{name}/activate` | Hot-swap the active agent |
+```bash
+# 1. Clone the repo
+git clone https://github.com/F8Hardin/AscendFi_VandyHacks_12.git
+cd AscendFi_VandyHacks_12
 
-When those routes exist, interactive docs will be at `http://localhost:8000/docs` with `uvicorn` running from `backend_agent/api`.
+# 2. Create your Hackathon .env with API keys
+cat > Hackathon/.env << 'EOF'
+ANTHROPIC_API_KEY=sk-ant-your-key-here
+OPENAI_API_KEY=sk-proj-your-key-here
+EOF
 
----
+# 3. Create frontend and backend env files
+cp frontend/.env.example frontend/.env
+cp backend/.env.example backend/.env
 
-## Dashboard Features
+# 4. Launch everything
+chmod +x start-dev.sh
+./start-dev.sh
+```
 
-### Live
-- KPI cards — Monthly Income, Checking Balance, Total Debt, Credit Score
-- Risk gauges — animated SVG rings for Overdraft, Missing Payments, Credit Score shift
-- Spending breakdown donut chart
-- Debt payoff projection line chart
-- Financial gains chart — net monthly gain + savings growth over 6 months
-- Recommended paycheck split donut
-- Active debts table with proportional bar indicators
-- Recent activity feed
+Open **http://localhost:3000** in your browser.
 
-### Planned
-| # | Feature | Description |
-|---|---------|-------------|
-| 1 | **Urgent Alerts Banner** | Dismissable strip — bills due, overdraft warnings, color-coded by severity |
-| 2 | **Financial Health Score** | Single 0–100 composite score derived from credit, debt-to-income, risk, and savings |
-| 3 | **Quick Actions Row** | Buttons to run Debt Optimizer, Spending Analysis, Paycheck Plan, and AI Chat |
-| 4 | **Net Worth Tracker** | Signed net worth with 6-month sparkline showing recovery trajectory |
-| 5 | **Monthly Cash Flow Bar** | Income vs Expenses grouped bar chart over last 3–4 months |
-| 6 | **Recovery Milestones** | Horizontal progress tracker through key financial goals |
-| 7 | **Next Bill Due Widget** | Countdown card to next upcoming payment |
-| 8 | **AI Insights Feed** | AI-generated tips tailored to the user's specific financial data |
-| 9 | **Savings Rate Gauge** | Progress bar showing savings % toward a target |
-| 10 | **Spending Trend Indicator** | Month-over-month badge on the spending chart |
+The launcher automatically:
+- Installs all Python, Node, and Nuxt dependencies
+- Builds the Node backend (TypeScript → `dist/`) and Nuxt frontend
+- Starts all three servers simultaneously
+- Cleans up all servers when you press `Ctrl+C`
 
 ---
 
-## Getting Started
+## Manual Setup — macOS / Linux
 
-### Prerequisites
-- Python 3.11+ (agent container + optional FastAPI)
-- Node 20+
-- Docker (for per-session agent containers)
-- LM Studio (optional, for local AI)
+Use this if you want to run each service in a separate terminal tab.
 
-### 1. Backend (Node.js) — port `3001`
+### Step 1 — Clone
+
+```bash
+git clone https://github.com/F8Hardin/AscendFi_VandyHacks_12.git
+cd AscendFi_VandyHacks_12
+```
+
+### Step 2 — Python Agent (port 8000)
+
+```bash
+cd Hackathon
+
+# Create and activate a virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install all dependencies
+pip install -r requirements.txt
+
+# Create your .env with API keys
+cat > .env << 'EOF'
+ANTHROPIC_API_KEY=sk-ant-your-key-here
+OPENAI_API_KEY=sk-proj-your-key-here
+EOF
+
+# Start the FastAPI server
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+The agent is live at **http://localhost:8000**.
+Swagger docs (API explorer) at **http://localhost:8000/docs**.
+
+### Step 3 — Node.js Backend (port 3001)
+
+Open a **new terminal tab**:
 
 ```bash
 cd backend
 cp .env.example .env
+# Optional: add Supabase credentials to backend/.env
+
 npm install
-npm run dev
+npm run build
+npm start
 ```
 
-Build the agent image first (step 3) or set `AGENT_IMAGE` to your tag.
+### Step 4 — Nuxt Frontend (port 3000)
 
-### 2. Backend agent — FastAPI (optional) — port `8000`
-
-```bash
-cd backend_agent/api
-python3 -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
-```
-
-### 3. Backend agent — Docker image
-
-```bash
-cd backend_agent/container
-docker build -t ascendfi-backend-agent:latest .
-```
-
-Match the tag to `AGENT_IMAGE` in `backend/.env`.
-
-### Frontend
+Open a **new terminal tab**:
 
 ```bash
 cd frontend
+cp .env.example .env
+
+npm install
+npm run dev   # hot-reload dev server
+```
+
+Open **http://localhost:3000**.
+
+---
+
+## Manual Setup — Windows
+
+### Step 1 — Clone
+
+```powershell
+git clone https://github.com/F8Hardin/AscendFi_VandyHacks_12.git
+cd AscendFi_VandyHacks_12
+```
+
+### Step 2 — Python Agent (port 8000)
+
+```powershell
+cd Hackathon
+
+# Create virtual environment
+python -m venv venv
+
+# Activate the virtual environment
+venv\Scripts\Activate.ps1
+```
+
+> If you see an execution policy error, run this first, then try activating again:
+> ```powershell
+> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+> ```
+
+```powershell
+# Install dependencies
+pip install -r requirements.txt
+
+# Create .env with your API keys
+# Option A: Use Notepad
+notepad .env
+# Type the following, save, and close:
+#   ANTHROPIC_API_KEY=sk-ant-your-key-here
+#   OPENAI_API_KEY=sk-proj-your-key-here
+
+# Option B: From PowerShell directly
+@"
+ANTHROPIC_API_KEY=sk-ant-your-key-here
+OPENAI_API_KEY=sk-proj-your-key-here
+"@ | Out-File -FilePath .env -Encoding utf8
+
+# Start the FastAPI server
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+### Step 3 — Node.js Backend (port 3001)
+
+Open a **new PowerShell window**:
+
+```powershell
+cd backend
+copy .env.example .env
+# Edit backend\.env if you want to add Supabase credentials
+
+npm install
+npm run build
+npm start
+```
+
+### Step 4 — Nuxt Frontend (port 3000)
+
+Open a **new PowerShell window**:
+
+```powershell
+cd frontend
+copy .env.example .env
+
 npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`
-
-### Data toggle
-
-```bash
-# frontend/.env
-NUXT_PUBLIC_USE_DUMMY_DATA=true   # demo dashboard data (no DB reads)
-NUXT_PUBLIC_USE_DUMMY_DATA=false  # live dashboard from GET /api/finance/dashboard (needs Supabase + schema)
-NUXT_PUBLIC_AGENT_BASE=http://localhost:3001   # same origin as Node backend (auth cookies)
-```
-
-**Supabase:** add `SUPABASE_URL` and `SUPABASE_ANON_KEY` to **`backend/.env`** (not the Nuxt app). In the Supabase dashboard, set **Site URL** to `http://localhost:3000` and add **Redirect URL** `http://localhost:3000/confirm` for email confirmation.
+Open **http://localhost:3000**.
 
 ---
 
-## Project structure
+## Environment Variables
+
+### `Hackathon/.env` — Python Agent
+
+This file is **required for all AI features**. It is already in `.gitignore` — never commit it.
+
+```env
+ANTHROPIC_API_KEY=sk-ant-...   # Required for ARIA chat + AI dashboard
+OPENAI_API_KEY=sk-proj-...     # Optional — fallback model
+```
+
+### `frontend/.env` — Nuxt App
+
+```env
+NUXT_PUBLIC_USE_DUMMY_DATA=true          # true = demo mode (no DB needed)
+NUXT_PUBLIC_API_BASE=http://localhost:8000/api   # Python agent URL
+NUXT_PUBLIC_AGENT_BASE=http://localhost:3001     # Node backend for chat
+
+PORT=3000
+```
+
+### `backend/.env` — Node.js Backend
+
+```env
+PORT=3001
+FRONTEND_URL=http://localhost:3000
+
+# Supabase (required for auth + live user data)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+
+# Connects Node backend directly to Python agent (bypasses Docker)
+DIRECT_AGENT_MODE=1
+DIRECT_AGENT_PORT=8000
+```
+
+---
+
+## Supabase Setup (Auth + Database)
+
+Skip this section if you just want demo mode (`NUXT_PUBLIC_USE_DUMMY_DATA=true`).
+
+1. Create a free project at [supabase.com](https://supabase.com)
+2. Go to **Settings → API** and copy your **Project URL** and **anon public key**
+3. Add them to `backend/.env`:
+   ```env
+   SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
+   SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+   ```
+4. In the Supabase dashboard, go to **Authentication → URL Configuration**:
+   - **Site URL:** `http://localhost:3000`
+   - **Redirect URLs:** add `http://localhost:3000/confirm`
+5. Open the **SQL Editor** in Supabase and run the SQL files from the `supabase/` folder
+
+---
+
+## Running Without Supabase (Demo Mode)
+
+You can run the entire frontend with realistic pre-built data — no database, no API keys.
+
+In `frontend/.env`:
+```env
+NUXT_PUBLIC_USE_DUMMY_DATA=true
+```
+
+All three dashboard tabs will show demo data. The Chat page and live AI analysis still require `ANTHROPIC_API_KEY` in `Hackathon/.env` and the Python agent running.
+
+---
+
+## API Keys
+
+| Key | Where to Get | Required For |
+|-----|-------------|--------------|
+| `ANTHROPIC_API_KEY` | [console.anthropic.com](https://console.anthropic.com/settings/keys) | ARIA chat, AI dashboard analysis |
+| `OPENAI_API_KEY` | [platform.openai.com](https://platform.openai.com/api-keys) | Optional AI fallback |
+| Supabase credentials | [supabase.com](https://supabase.com) → Settings → API | Auth + live user data |
+
+**Market data** (stock prices, charts) uses **stooq.com** — completely free, no account or key needed.
+
+---
+
+## Dashboard Pages
+
+| URL | Page | Description |
+|-----|------|-------------|
+| `/` | Landing | Sign in / sign up |
+| `/dashboard` | Checking & Spending | AI risk chips, spending breakdown, behavior insights, sparklines |
+| `/dashboard/debt` | Debt & Investments | Debt payoff calculator, live stock watchlist + price charts |
+| `/dashboard/autonomous` | Autonomous Finance | AI behavior profile, AI next steps, paycheck split, emergency fund |
+| `/chat` | ARIA Chat | Streaming AI financial advisor |
+| `/invest` | Invest | Market overview, stock/ETF search, interactive price history |
+
+---
+
+## How the Services Connect
 
 ```
-AscendFi_VandyHacks_12/
-├── backend/                 # Node.js — Express, session + chat proxy, Docker orchestration
-│   ├── src/
-│   └── package.json
-├── backend_agent/           # Python — agent container + optional FastAPI
-│   ├── container/           # Dockerized Uvicorn agent (/chat/stream, /health)
-│   └── api/                 # FastAPI + Pydantic models (extend for REST features)
-├── frontend/                # Nuxt 4 app
-│   └── app/
-│       ├── assets/css/
-│       ├── components/
-│       ├── composables/
-│       ├── data/
-│       ├── layouts/
-│       └── pages/
-└── supabase/                # SQL schema (profiles, financial tables, RLS)
+Browser (localhost:3000)
+    │
+    ├──► Nuxt frontend (port 3000)
+    │        │
+    │        ├── /api/market/* ──────────── stooq.com (free stock data)
+    │        └── useFinancialData() ──────► Node backend (port 3001)
+    │                                            │
+    │                                            ├── Supabase (auth + user profile)
+    │                                            └── Python agent (port 8000)
+    │                                                    │
+    │                                                    └── Anthropic / OpenAI APIs
+    │
+    └──► Chat page ──► Node backend (port 3001) ──► Python /chat/stream (SSE)
 ```
+
+All three services must be running for the full experience. You can run just the frontend in demo mode (`NUXT_PUBLIC_USE_DUMMY_DATA=true`) without Node or Python.
+
+---
+
+## Troubleshooting
+
+### `uvicorn: command not found`
+```bash
+# Make sure your venv is active, then:
+pip install uvicorn
+
+# Or run as a Python module instead:
+python3 -m uvicorn app.main:app --port 8000 --reload   # macOS/Linux
+python -m uvicorn app.main:app --port 8000 --reload    # Windows
+```
+
+### `pip install` fails on `catboost` or `xgboost` (Windows)
+These packages need C++ build tools. Install them from Microsoft:
+```
+https://visualstudio.microsoft.com/visual-cpp-build-tools/
+```
+Select "Desktop development with C++" during install, then retry `pip install -r requirements.txt`.
+
+### Port already in use
+
+**macOS / Linux:**
+```bash
+lsof -ti:8000 | xargs kill -9   # Python agent
+lsof -ti:3001 | xargs kill -9   # Node backend
+lsof -ti:3000 | xargs kill -9   # Nuxt frontend
+```
+
+**Windows (PowerShell):**
+```powershell
+# Find the PID using the port
+netstat -ano | findstr :8000
+# Then kill it (replace 1234 with actual PID)
+taskkill /PID 1234 /F
+```
+
+### Dashboard shows "Demo data · start the Python agent for live AI"
+This means the frontend can't reach the Python agent. Make sure:
+1. You have `Hackathon/.env` with a valid `ANTHROPIC_API_KEY`
+2. The Python agent is running on port 8000 (`uvicorn app.main:app --port 8000`)
+3. `frontend/.env` has `NUXT_PUBLIC_API_BASE=http://localhost:8000/api`
+
+### Frontend shows "Demo data" even after setting up Supabase
+Set `NUXT_PUBLIC_USE_DUMMY_DATA=false` in `frontend/.env` and restart the frontend server. The app only reads live data when both Supabase and the Python agent are reachable.
+
+### macOS: `./start-dev.sh: Permission denied`
+```bash
+chmod +x start-dev.sh
+./start-dev.sh
+```
+
+### Windows: PowerShell execution policy error when activating venv
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+### `npm run build` fails in backend (TypeScript errors)
+```bash
+cd backend
+npm install
+npm run build
+```
+If it still fails, check that `node --version` is v20+.
+
+### `npm run dev` fails on Windows with ENOENT / permission errors
+Try running PowerShell as Administrator, or use Git Bash instead of PowerShell.
 
 ---
 
 ## Team
 
-Built at VandyHacks 12.
+Built at **VandyHacks 12**.
