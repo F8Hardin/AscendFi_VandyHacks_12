@@ -12,7 +12,7 @@ export type SignUpResult = { ok: true; needsEmailConfirmation: boolean } | { ok:
 
 function backendBase(): string {
   const config = useRuntimeConfig()
-  return String(config.public.agentBase || 'http://localhost:3001')
+  return String(config.public.agentBase || 'http://localhost:3120')
 }
 
 export function useAuth() {
