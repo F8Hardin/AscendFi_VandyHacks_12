@@ -165,6 +165,9 @@
             <p class="dash-pillar__meta">
               Target: {{ emergencyFundMonths }} months of expenses
             </p>
+            <button class="btn btn--secondary btn--sm" style="margin-top: 0.75rem; width: 100%" @click="showEmergencyPlanner = !showEmergencyPlanner">
+              {{ showEmergencyPlanner ? 'Hide' : 'View' }} Projection Plan
+            </button>
           </div>
           <div class="dash-card dash-pillar">
             <span class="dash-pillar__icon" aria-hidden="true">📉</span>
@@ -188,6 +191,9 @@
               </p>
             </div>
             <p class="dash-pillar__meta">{{ data.debts.length }} debts on file</p>
+            <button class="btn btn--secondary btn--sm" style="margin-top: 0.75rem; width: 100%" @click="showDebtPlanner = !showDebtPlanner">
+              {{ showDebtPlanner ? 'Hide' : 'View' }} Payoff Simulator
+            </button>
           </div>
           <div class="dash-card dash-pillar">
             <span class="dash-pillar__icon" aria-hidden="true">📈</span>
@@ -209,6 +215,291 @@
               </p>
             </div>
             <p class="dash-pillar__meta">Consult a licensed professional for your situation.</p>
+            <button class="btn btn--secondary btn--sm" style="margin-top: 0.75rem; width: 100%" @click="showInvestmentPlanner = !showInvestmentPlanner">
+              {{ showInvestmentPlanner ? 'Hide' : 'View' }} Market Simulator
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Emergency Fund Planner -->
+      <section v-if="showEmergencyPlanner" class="dash-mb">
+        <div class="dash-section">
+          <h2 class="dash-section-title">Emergency Fund Projection</h2>
+        </div>
+        <div class="dash-card dash-card--planner">
+          <div class="planner-grid">
+            <div class="planner-inputs">
+              <h3 class="planner-title">Adjust Your Savings Rate</h3>
+              <div class="input-group">
+                <label class="input-label">Monthly contribution</label>
+                <div class="input-with-prefix">
+                  <span class="input-prefix">$</span>
+                  <input
+                    v-model.number="emergencyMonthlyContribution"
+                    type="number"
+                    class="form-input"
+                    min="0"
+                    step="50"
+                  />
+                </div>
+              </div>
+              <div class="input-group">
+                <label class="input-label">Current savings</label>
+                <div class="input-with-prefix">
+                  <span class="input-prefix">$</span>
+                  <input
+                    v-model.number="emergencyCurrentSavings"
+                    type="number"
+                    class="form-input"
+                    min="0"
+                    step="100"
+                  />
+                </div>
+              </div>
+              <div class="input-group">
+                <label class="input-label">Target months</label>
+                <select v-model="emergencyTargetMonths" class="form-select">
+                  <option :value="3">3 months</option>
+                  <option :value="4">4 months</option>
+                  <option :value="6">6 months</option>
+                  <option :value="12">12 months</option>
+                </select>
+              </div>
+            </div>
+            <div class="planner-results">
+              <h3 class="planner-title">Your Timeline</h3>
+              <div class="result-cards">
+                <div class="result-card">
+                  <span class="result-label">Time to goal</span>
+                  <span class="result-value" :class="emergencyMonthsToGoal > 24 ? 'result-value--warning' : 'result-value--success'">
+                    {{ emergencyMonthsToGoal }} months
+                  </span>
+                </div>
+                <div class="result-card">
+                  <span class="result-label">Target amount</span>
+                  <span class="result-value">${{ emergencyFundTargetFormatted }}</span>
+                </div>
+                <div class="result-card">
+                  <span class="result-label">Interest earned (HYSA)</span>
+                  <span class="result-value result-value--success">+${{ emergencyInterestEarned }}</span>
+                </div>
+              </div>
+              <div class="milestone-timeline">
+                <div
+                  v-for="(milestone, idx) in emergencyMilestones"
+                  :key="idx"
+                  class="milestone-item"
+                  :class="{ 'milestone-item--achieved': milestone.achieved }"
+                >
+                  <span class="milestone-dot" :class="{ 'milestone-dot--achieved': milestone.achieved }" />
+                  <div class="milestone-content">
+                    <span class="milestone-label">{{ milestone.label }}</span>
+                    <span class="milestone-date">{{ milestone.date }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Debt Payoff Simulator -->
+      <section v-if="showDebtPlanner" class="dash-mb">
+        <div class="dash-section">
+          <h2 class="dash-section-title">Debt Payoff Simulator</h2>
+        </div>
+        <div class="dash-card dash-card--planner">
+          <div class="planner-grid">
+            <div class="planner-inputs">
+              <h3 class="planner-title">Extra Payment Strategy</h3>
+              <div class="input-group">
+                <label class="input-label">Extra monthly payment</label>
+                <div class="input-with-prefix">
+                  <span class="input-prefix">$</span>
+                  <input
+                    v-model.number="debtExtraPayment"
+                    type="number"
+                    class="form-input"
+                    min="0"
+                    step="25"
+                  />
+                </div>
+              </div>
+              <div class="input-group">
+                <label class="input-label">Payoff method</label>
+                <select v-model="debtMethod" class="form-select">
+                  <option value="avalanche">Avalanche (highest APR first)</option>
+                  <option value="snowball">Snowball (lowest balance first)</option>
+                </select>
+              </div>
+              <div class="strategy-info">
+                <p v-if="debtMethod === 'avalanche'" class="info-text info-text--primary">
+                  💡 Avalanche saves more money on interest over time
+                </p>
+                <p v-else class="info-text info-text--secondary">
+                  🎯 Snowball provides quick wins for motivation
+                </p>
+              </div>
+            </div>
+            <div class="planner-results">
+              <h3 class="planner-title">Payoff Projection</h3>
+              <div class="result-cards">
+                <div class="result-card">
+                  <span class="result-label">Debt-free date</span>
+                  <span class="result-value">{{ debtFreeDate }}</span>
+                </div>
+                <div class="result-card">
+                  <span class="result-label">Total interest paid</span>
+                  <span class="result-value" :class="debtInterestSaved > 0 ? 'result-value--success' : ''">
+                    ${{ totalDebtInterestWithStrategy.toLocaleString() }}
+                  </span>
+                </div>
+                <div class="result-card">
+                  <span class="result-label">Interest saved</span>
+                  <span class="result-value result-value--success">+${{ debtInterestSaved.toLocaleString() }}</span>
+                </div>
+              </div>
+              <div class="debt-breakdown">
+                <h4 class="breakdown-title">Payoff Order ({{ debtMethod }})</h4>
+                <div class="debt-list">
+                  <div
+                    v-for="(debt, idx) in simulatedDebtPayoff"
+                    :key="debt.name"
+                    class="debt-item"
+                  >
+                    <span class="debt-rank">#{{ idx + 1 }}</span>
+                    <div class="debt-info">
+                      <span class="debt-name">{{ debt.name }}</span>
+                      <span class="debt-details">{{ debt.rate.toFixed(1) }}% APR · ${{ debt.balance.toLocaleString() }}</span>
+                    </div>
+                    <span class="debt-months">{{ debt.monthsToPayoff }} mo</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Investment Market Simulator -->
+      <section v-if="showInvestmentPlanner" class="dash-mb">
+        <div class="dash-section">
+          <h2 class="dash-section-title">Investment Growth Simulator</h2>
+        </div>
+        <div class="dash-card dash-card--planner">
+          <div class="planner-grid planner-grid--wide">
+            <div class="planner-inputs">
+              <h3 class="planner-title">Investment Parameters</h3>
+              <div class="input-group">
+                <label class="input-label">Monthly contribution</label>
+                <div class="input-with-prefix">
+                  <span class="input-prefix">$</span>
+                  <input
+                    v-model.number="investMonthlyContribution"
+                    type="number"
+                    class="form-input"
+                    min="0"
+                    step="50"
+                  />
+                </div>
+              </div>
+              <div class="input-group">
+                <label class="input-label">Current portfolio</label>
+                <div class="input-with-prefix">
+                  <span class="input-prefix">$</span>
+                  <input
+                    v-model.number="investCurrentPortfolio"
+                    type="number"
+                    class="form-input"
+                    min="0"
+                    step="100"
+                  />
+                </div>
+              </div>
+              <div class="input-group">
+                <label class="input-label">Investment horizon</label>
+                <select v-model="investYears" class="form-select">
+                  <option :value="5">5 years</option>
+                  <option :value="10">10 years</option>
+                  <option :value="20">20 years</option>
+                  <option :value="30">30 years</option>
+                </select>
+              </div>
+              <div class="input-group">
+                <label class="input-label">Market scenario</label>
+                <select v-model="investScenario" class="form-select" @change="updateInvestmentAllocation">
+                  <option value="conservative">Conservative (4-6% avg)</option>
+                  <option value="moderate">Moderate (7-9% avg)</option>
+                  <option value="aggressive">Aggressive (10-12% avg)</option>
+                </select>
+              </div>
+              <div class="scenario-details">
+                <p class="scenario-label">Selected scenario breakdown:</p>
+                <div class="scenario-stats">
+                  <span class="stat-item">
+                    <span class="stat-label">Expected</span>
+                    <span class="stat-value">{{ scenarioStats.expected }}%</span>
+                  </span>
+                  <span class="stat-item">
+                    <span class="stat-label">Best case</span>
+                    <span class="stat-value stat-value--positive">+{{ scenarioStats.best }}%</span>
+                  </span>
+                  <span class="stat-item">
+                    <span class="stat-label">Worst case</span>
+                    <span class="stat-value stat-value--negative">{{ scenarioStats.worst }}%</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="planner-results">
+              <h3 class="planner-title">Projected Growth</h3>
+              <div class="result-cards result-cards--horizontal">
+                <div class="result-card result-card--highlight">
+                  <span class="result-label">Future value (avg)</span>
+                  <span class="result-value result-value--large">${{ projectedFutureValue.toLocaleString() }}</span>
+                  <span class="result-sub">+${{ projectedGains.toLocaleString() }} gains</span>
+                </div>
+                <div class="result-card">
+                  <span class="result-label">Best case</span>
+                  <span class="result-value result-value--positive">${{ projectedBestCase.toLocaleString() }}</span>
+                </div>
+                <div class="result-card">
+                  <span class="result-label">Worst case</span>
+                  <span class="result-value result-value--negative">${{ projectedWorstCase.toLocaleString() }}</span>
+                </div>
+              </div>
+              <div class="growth-breakdown">
+                <h4 class="breakdown-title">Growth Projection by Year</h4>
+                <div class="growth-chart">
+                  <div
+                    v-for="(year, idx) in growthProjection"
+                    :key="year.year"
+                    class="growth-bar"
+                    :style="{ '--growth-pct': Math.min((year.value / growthProjection[growthProjection.length - 1].value) * 100, 100) }"
+                  >
+                    <span class="growth-year">{{ year.year }}y</span>
+                    <div class="growth-bar-fill" />
+                    <span class="growth-value">${{ (year.value / 1000).toFixed(0) }}k</span>
+                  </div>
+                </div>
+              </div>
+              <div class="investment-mix">
+                <h4 class="breakdown-title">Suggested Asset Allocation</h4>
+                <div class="allocation-pie">
+                  <div class="allocation-segment" :style="{ width: `${assetAllocation.stocks}%`, background: 'var(--color-primary)' }">
+                    <span>Stocks {{ assetAllocation.stocks }}%</span>
+                  </div>
+                  <div class="allocation-segment" :style="{ width: `${assetAllocation.bonds}%`, background: '#f59e0b' }">
+                    <span>Bonds {{ assetAllocation.bonds }}%</span>
+                  </div>
+                  <div class="allocation-segment" :style="{ width: `${assetAllocation.cash}%`, background: '#22c55e' }">
+                    <span>Cash {{ assetAllocation.cash }}%</span>
+                  </div>
+                </div>
+                <p class="allocation-note">Based on {{ investScenario }} scenario and {{ investYears }}-year horizon</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -422,6 +713,34 @@ const userAllocations = ref<number[]>([])
 const allocationValues = ref<number[]>([])
 const allocationDiffs = ref<number[]>([])
 
+// Planner visibility state
+const showEmergencyPlanner = ref(false)
+const showDebtPlanner = ref(false)
+const showInvestmentPlanner = ref(false)
+
+// Emergency Fund Planner state
+const emergencyMonthlyContribution = ref(500)
+const emergencyCurrentSavings = ref(0)
+const emergencyTargetMonths = ref(6)
+
+// Debt Payoff Simulator state
+const debtExtraPayment = ref(200)
+const debtMethod = ref<'avalanche' | 'snowball'>('avalanche')
+
+// Investment Simulator state
+const investMonthlyContribution = ref(500)
+const investCurrentPortfolio = ref(0)
+const investYears = ref(30)
+const investScenario = ref<'conservative' | 'moderate' | 'aggressive'>('moderate')
+const assetAllocation = ref({ stocks: 70, bonds: 25, cash: 5 })
+
+// Investment scenario definitions
+const investmentScenarios = {
+  conservative: { expected: 5, best: 6, worst: 4 },
+  moderate: { expected: 8, best: 9, worst: 7 },
+  aggressive: { expected: 11, best: 12, worst: 10 },
+}
+
 // Initialize slider values from current allocation
 watch(
   () => data.value?.paycheckSplit,
@@ -431,10 +750,272 @@ watch(
       userAllocations.value = split.amounts.map(amt => Math.round((amt / total) * 100))
       allocationValues.value = split.amounts.map(amt => amt)
       allocationDiffs.value = split.amounts.map(() => 0)
+      
+      // Initialize planner values from data
+      const savingsIdx = split.labels.findIndex(l => l.toLowerCase().includes('save') || l.toLowerCase().includes('emergency'))
+      if (savingsIdx !== -1) {
+        emergencyMonthlyContribution.value = split.amounts[savingsIdx]
+        emergencyCurrentSavings.value = data.value?.accounts.savings || 0
+      }
+      
+      const investingIdx = split.labels.findIndex(l => l.toLowerCase().includes('invest'))
+      if (investingIdx !== -1) {
+        investMonthlyContribution.value = split.amounts[investingIdx]
+      }
     }
   },
   { immediate: true }
 )
+
+// Emergency Fund Planner computed properties
+const emergencyFundTargetFormatted = computed(() => {
+  const target = monthlyExpenses.value * emergencyTargetMonths.value
+  return target.toLocaleString('en-US', { maximumFractionDigits: 0 })
+})
+
+const emergencyMonthsToGoal = computed(() => {
+  const target = monthlyExpenses.value * emergencyTargetMonths.value
+  const remaining = target - emergencyCurrentSavings.value
+  if (remaining <= 0) return 0
+  if (emergencyMonthlyContribution.value <= 0) return Infinity
+  // Account for 4.5% APY from HYSA (compounded monthly)
+  const monthlyRate = 0.045 / 12
+  let months = 0
+  let balance = emergencyCurrentSavings.value
+  while (balance < target && months < 600) {
+    balance = balance * (1 + monthlyRate) + emergencyMonthlyContribution.value
+    months++
+  }
+  return months
+})
+
+const emergencyInterestEarned = computed(() => {
+  const target = monthlyExpenses.value * emergencyTargetMonths.value
+  const months = emergencyMonthsToGoal.value
+  if (months <= 0 || months === Infinity) return '0'
+  const monthlyRate = 0.045 / 12
+  let balance = emergencyCurrentSavings.value
+  let totalContributed = 0
+  for (let i = 0; i < months; i++) {
+    const interest = balance * monthlyRate
+    balance += interest + emergencyMonthlyContribution.value
+    totalContributed += emergencyMonthlyContribution.value
+  }
+  const interestEarned = balance - emergencyCurrentSavings.value - totalContributed
+  return Math.round(interestEarned).toLocaleString()
+})
+
+const emergencyMilestones = computed(() => {
+  const target = monthlyExpenses.value * emergencyTargetMonths.value
+  const milestones = [
+    { pct: 0.25, label: '25% of goal' },
+    { pct: 0.5, label: '50% of goal' },
+    { pct: 0.75, label: '75% of goal' },
+    { pct: 1, label: 'Fully funded!' },
+  ]
+  
+  const monthlyRate = 0.045 / 12
+  let balance = emergencyCurrentSavings.value
+  let month = 0
+  
+  return milestones.map(m => {
+    const milestoneAmount = target * m.pct
+    let achievedDate = 'Already achieved!'
+    let achieved = balance >= milestoneAmount
+    
+    if (!achieved && emergencyMonthlyContribution.value > 0) {
+      while (balance < milestoneAmount && month < 600) {
+        balance = balance * (1 + monthlyRate) + emergencyMonthlyContribution.value
+        month++
+      }
+      const futureDate = new Date()
+      futureDate.setMonth(futureDate.getMonth() + month)
+      achievedDate = futureDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+    }
+    
+    return {
+      label: m.label,
+      date: achievedDate,
+      achieved,
+    }
+  })
+})
+
+// Debt Payoff Simulator computed properties
+const simulatedDebtPayoff = computed(() => {
+  if (!data.value?.debts || data.value.debts.length === 0) return []
+  
+  const debts = data.value.debts.map(d => ({
+    ...d,
+    remainingBalance: d.balance,
+    monthsToPayoff: 0,
+  }))
+  
+  // Sort based on method
+  if (debtMethod.value === 'avalanche') {
+    debts.sort((a, b) => b.rate - a.rate)
+  } else {
+    debts.sort((a, b) => a.remainingBalance - b.remainingBalance)
+  }
+  
+  let extraPayment = debtExtraPayment.value
+  const monthlyRate = 0.05 / 12 // Average rate for simulation
+  
+  // Simulate payoff
+  debts.forEach((debt, idx) => {
+    let balance = debt.remainingBalance
+    let months = 0
+    const minPayment = debt.min
+    const totalPayment = minPayment + (idx === 0 ? extraPayment : 0)
+    
+    while (balance > 0 && months < 360) {
+      const interest = balance * (debt.rate / 100 / 12)
+      const principal = Math.min(totalPayment - interest, balance)
+      balance -= principal
+      balance += interest
+      months++
+    }
+    debt.monthsToPayoff = months
+  })
+  
+  return debts
+})
+
+const debtFreeDate = computed(() => {
+  if (simulatedDebtPayoff.value.length === 0) return 'N/A'
+  const maxMonths = Math.max(...simulatedDebtPayoff.value.map(d => d.monthsToPayoff))
+  if (maxMonths === 0) return 'Already debt-free!'
+  const futureDate = new Date()
+  futureDate.setMonth(futureDate.getMonth() + maxMonths)
+  return futureDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+})
+
+const totalDebtInterestWithStrategy = computed(() => {
+  let totalInterest = 0
+  simulatedDebtPayoff.value.forEach(debt => {
+    const monthlyRate = debt.rate / 100 / 12
+    let balance = debt.balance
+    const payment = debt.min + (simulatedDebtPayoff.value.indexOf(debt) === 0 ? debtExtraPayment.value : 0)
+    
+    for (let i = 0; i < debt.monthsToPayoff && balance > 0; i++) {
+      const interest = balance * monthlyRate
+      totalInterest += interest
+      balance = balance - payment + interest
+    }
+  })
+  return Math.round(totalInterest)
+})
+
+const debtInterestSaved = computed(() => {
+  // Calculate interest without extra payments
+  let baselineInterest = 0
+  let strategyInterest = totalDebtInterestWithStrategy.value
+  
+  data.value?.debts.forEach(debt => {
+    const monthlyRate = debt.rate / 100 / 12
+    let balance = debt.balance
+    let months = 0
+    
+    // Baseline: minimum payments only
+    while (balance > 0 && months < 600) {
+      const interest = balance * monthlyRate
+      baselineInterest += interest
+      balance = balance - debt.min + interest
+      months++
+    }
+  })
+  
+  return Math.round(baselineInterest - strategyInterest)
+})
+
+// Investment Simulator computed properties
+const scenarioStats = computed(() => {
+  return investmentScenarios[investScenario.value]
+})
+
+const projectedFutureValue = computed(() => {
+  const rate = investmentScenarios[investScenario.value].expected / 100 / 12
+  const months = investYears.value * 12
+  let fv = investCurrentPortfolio.value
+  
+  for (let i = 0; i < months; i++) {
+    fv = fv * (1 + rate) + investMonthlyContribution.value
+  }
+  
+  return Math.round(fv)
+})
+
+const projectedGains = computed(() => {
+  const totalContributed = investCurrentPortfolio.value + (investMonthlyContribution.value * investYears.value * 12)
+  return projectedFutureValue.value - totalContributed
+})
+
+const projectedBestCase = computed(() => {
+  const rate = investmentScenarios[investScenario.value].best / 100 / 12
+  const months = investYears.value * 12
+  let fv = investCurrentPortfolio.value
+  
+  for (let i = 0; i < months; i++) {
+    fv = fv * (1 + rate) + investMonthlyContribution.value
+  }
+  
+  return Math.round(fv)
+})
+
+const projectedWorstCase = computed(() => {
+  const rate = investmentScenarios[investScenario.value].worst / 100 / 12
+  const months = investYears.value * 12
+  let fv = investCurrentPortfolio.value
+  
+  for (let i = 0; i < months; i++) {
+    fv = fv * (1 + rate) + investMonthlyContribution.value
+  }
+  
+  return Math.round(fv)
+})
+
+const growthProjection = computed(() => {
+  const rate = investmentScenarios[investScenario.value].expected / 100 / 12
+  const months = investYears.value * 12
+  let fv = investCurrentPortfolio.value
+  const projections = []
+  
+  for (let year = 1; year <= investYears.value; year++) {
+    for (let m = 0; m < 12; m++) {
+      fv = fv * (1 + rate) + investMonthlyContribution.value
+    }
+    projections.push({
+      year,
+      value: Math.round(fv),
+    })
+  }
+  
+  return projections
+})
+
+function updateInvestmentAllocation() {
+  const scenario = investScenario.value
+  const years = investYears.value
+  
+  // Adjust allocation based on scenario and time horizon
+  if (scenario === 'conservative') {
+    assetAllocation.value = { stocks: 40, bonds: 45, cash: 15 }
+  } else if (scenario === 'moderate') {
+    if (years >= 20) {
+      assetAllocation.value = { stocks: 70, bonds: 25, cash: 5 }
+    } else if (years >= 10) {
+      assetAllocation.value = { stocks: 60, bonds: 35, cash: 5 }
+    } else {
+      assetAllocation.value = { stocks: 50, bonds: 40, cash: 10 }
+    }
+  } else if (scenario === 'aggressive') {
+    if (years >= 20) {
+      assetAllocation.value = { stocks: 90, bonds: 8, cash: 2 }
+    } else {
+      assetAllocation.value = { stocks: 80, bonds: 15, cash: 5 }
+    }
+  }
+}
 
 const totalAllocation = computed(() => {
   return userAllocations.value.reduce((sum, pct) => sum + pct, 0)
@@ -795,5 +1376,492 @@ useHead({ title: 'Autonomous finance — AI Financial' })
 
 .btn--primary:hover {
   background: #2563eb;
+}
+
+/* Secondary button */
+.btn--secondary {
+  background: var(--color-bg-subtle, #e2e8f0);
+  color: var(--color-text, #0f172a);
+}
+
+.btn--secondary:hover {
+  background: #cbd5e1;
+}
+
+.btn--sm {
+  padding: 0.5rem 0.875rem;
+  font-size: 0.8125rem;
+}
+
+/* Planner Card Styles */
+.dash-card--planner {
+  background: linear-gradient(135deg, var(--color-bg, #ffffff) 0%, var(--color-bg-subtle, #f8fafc) 100%);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+
+.planner-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.planner-grid--wide {
+  grid-template-columns: 1fr 1.5fr;
+}
+
+@media (max-width: 900px) {
+  .planner-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+.planner-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text, #0f172a);
+  margin: 0 0 1rem 0;
+}
+
+/* Planner Inputs */
+.planner-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-right: 1rem;
+  border-right: 1px solid var(--color-border, #e2e8f0);
+}
+
+@media (max-width: 900px) {
+  .planner-inputs {
+    border-right: none;
+    border-bottom: 1px solid var(--color-border, #e2e8f0);
+    padding-right: 0;
+    padding-bottom: 1rem;
+  }
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.input-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-muted, #64748b);
+}
+
+.input-with-prefix {
+  display: flex;
+  align-items: center;
+  background: var(--color-bg, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 0.5rem;
+  padding: 0 0.75rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-with-prefix:focus-within {
+  border-color: var(--color-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.input-prefix {
+  color: var(--color-text-muted, #94a3b8);
+  font-weight: 500;
+  margin-right: 0.25rem;
+}
+
+.form-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0.625rem 0;
+  font-size: 0.9375rem;
+  color: var(--color-text, #0f172a);
+  outline: none;
+}
+
+.form-input[type="number"]::-webkit-inner-spin-button,
+.form-input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.form-select {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 0.5rem;
+  background: var(--color-bg, #ffffff);
+  font-size: 0.9375rem;
+  color: var(--color-text, #0f172a);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-select:focus {
+  border-color: var(--color-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.strategy-info {
+  margin-top: 0.5rem;
+}
+
+.info-text {
+  font-size: 0.8125rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  margin: 0;
+}
+
+.info-text--primary {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--color-primary, #3b82f6);
+}
+
+.info-text--secondary {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--color-warning, #f59e0b);
+}
+
+/* Scenario Details */
+.scenario-details {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: var(--color-bg-subtle, #f1f5f9);
+  border-radius: 0.5rem;
+}
+
+.scenario-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #64748b);
+  margin: 0 0 0.5rem 0;
+}
+
+.scenario-stats {
+  display: flex;
+  gap: 1rem;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.stat-label {
+  font-size: 0.6875rem;
+  color: var(--color-text-muted, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.stat-value {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text, #0f172a);
+}
+
+.stat-value--positive {
+  color: var(--color-success, #22c55e);
+}
+
+.stat-value--negative {
+  color: var(--color-danger, #ef4444);
+}
+
+/* Planner Results */
+.planner-results {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.result-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.result-cards--horizontal {
+  grid-template-columns: 1.5fr 1fr 1fr;
+}
+
+@media (max-width: 700px) {
+  .result-cards,
+  .result-cards--horizontal {
+    grid-template-columns: 1fr;
+  }
+}
+
+.result-card {
+  padding: 1rem;
+  background: var(--color-bg-subtle, #f8fafc);
+  border-radius: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.result-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.result-card--highlight {
+  background: linear-gradient(135deg, var(--color-primary, #3b82f6) 0%, #2563eb 100%);
+  color: white;
+}
+
+.result-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #64748b);
+  font-weight: 500;
+}
+
+.result-card--highlight .result-label {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.result-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+}
+
+.result-value--large {
+  font-size: 1.5rem;
+}
+
+.result-value--success {
+  color: var(--color-success, #22c55e);
+}
+
+.result-value--warning {
+  color: var(--color-warning, #f59e0b);
+}
+
+.result-value--negative {
+  color: var(--color-danger, #ef4444);
+}
+
+.result-card--highlight .result-value {
+  color: white;
+}
+
+.result-sub {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #64748b);
+}
+
+.result-card--highlight .result-sub {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Milestone Timeline */
+.milestone-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--color-bg-subtle, #f8fafc);
+  border-radius: 0.75rem;
+}
+
+.milestone-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+.milestone-item--achieved {
+  opacity: 1;
+}
+
+.milestone-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-border, #e2e8f0);
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+}
+
+.milestone-dot--achieved {
+  background: var(--color-success, #22c55e);
+}
+
+.milestone-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.milestone-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text, #0f172a);
+}
+
+.milestone-date {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #64748b);
+}
+
+/* Debt Breakdown */
+.debt-breakdown {
+  padding: 0.75rem;
+  background: var(--color-bg-subtle, #f8fafc);
+  border-radius: 0.75rem;
+}
+
+.breakdown-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text, #0f172a);
+  margin: 0 0 0.75rem 0;
+}
+
+.debt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.debt-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  background: var(--color-bg, #ffffff);
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border, #e2e8f0);
+}
+
+.debt-rank {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--color-primary, #3b82f6);
+  width: 2rem;
+}
+
+.debt-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.debt-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text, #0f172a);
+}
+
+.debt-details {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #64748b);
+}
+
+.debt-months {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-muted, #94a3b8);
+}
+
+/* Growth Chart */
+.growth-breakdown {
+  padding: 0.75rem;
+  background: var(--color-bg-subtle, #f8fafc);
+  border-radius: 0.75rem;
+}
+
+.growth-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.375rem;
+  height: 120px;
+  padding: 0.5rem;
+}
+
+.growth-bar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  position: relative;
+}
+
+.growth-year {
+  font-size: 0.625rem;
+  color: var(--color-text-muted, #94a3b8);
+  position: absolute;
+  bottom: -18px;
+}
+
+.growth-bar-fill {
+  width: 100%;
+  height: calc(var(--growth-pct) * 1%);
+  min-height: 4px;
+  background: linear-gradient(180deg, var(--color-primary, #3b82f6) 0%, #60a5fa 100%);
+  border-radius: 4px 4px 0 0;
+  transition: height 0.3s ease;
+}
+
+.growth-value {
+  font-size: 0.625rem;
+  color: var(--color-text-muted, #94a3b8);
+  position: absolute;
+  top: -14px;
+  white-space: nowrap;
+}
+
+/* Investment Mix */
+.investment-mix {
+  padding: 0.75rem;
+  background: var(--color-bg-subtle, #f8fafc);
+  border-radius: 0.75rem;
+}
+
+.allocation-pie {
+  display: flex;
+  height: 32px;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.allocation-segment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: width 0.3s ease;
+  overflow: hidden;
+}
+
+.allocation-segment span {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.allocation-note {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #64748b);
+  margin: 0;
+  text-align: center;
 }
 </style>
